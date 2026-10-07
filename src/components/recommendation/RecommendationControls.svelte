@@ -43,6 +43,7 @@
   export let hideLogitWeight = false;
   export let onForceProfileRefresh: (() => void) | undefined = undefined;
   export let isProfileRefreshing = false;
+  export let profileRefreshError = '';
 
   // Local state for sliders to prevent updates while dragging
   let localLogitWeight = $params.logitWeight;
@@ -110,13 +111,24 @@
   </div>
   {#if $params.profileSource === ProfileSource.MyAnimeList && onForceProfileRefresh}
     <div class="profile-refresh">
-      <button type="button" disabled={isProfileRefreshing || isLoading} on:click={() => onForceProfileRefresh?.()}>
+      <button
+        type="button"
+        disabled={isProfileRefreshing || isLoading || $params.modelName === ModelName.Legacy_2023}
+        on:click={() => onForceProfileRefresh?.()}
+      >
         {isProfileRefreshing ? 'Refreshing MyAnimeList…' : 'Refresh MyAnimeList data'}
       </button>
       <span class="helper-text">
-        MyAnimeList profiles are cached by Sprout for 60 seconds. This button bypasses that cache, fetches the latest
-        list from MAL, and recomputes the recommendations.
+        {#if $params.modelName === ModelName.Legacy_2023}
+          Force refresh is unavailable for Legacy (2023), which is served by a separate legacy deployment.
+        {:else}
+          MyAnimeList profiles are cached by Sprout for 60 seconds. This button bypasses that cache, fetches the latest
+          list from MAL, and recomputes the recommendations.
+        {/if}
       </span>
+      {#if profileRefreshError}
+        <span class="refresh-error">{profileRefreshError}</span>
+      {/if}
     </div>
   {/if}
   {#if !isMobile && !forceHideTopBar}
@@ -390,8 +402,13 @@
   }
 
   .profile-refresh button:disabled {
-    cursor: wait;
+    cursor: not-allowed;
     opacity: 0.6;
+  }
+
+  .refresh-error {
+    color: #ff8389;
+    font-size: 0.75rem;
   }
 
   @media (max-width: 768px) {

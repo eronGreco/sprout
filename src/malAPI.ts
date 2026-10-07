@@ -149,15 +149,23 @@ export interface MALUserMangaListResponse {
   paging: { next?: string | null };
 }
 
-// Cache for 5 minutes
+// Cache profile lists for 60 seconds to reduce upstream MAL API traffic.
 const UserAnimeListCache = new NodeCache({ stdTTL: 60 });
 const UserMangaListCache = new NodeCache({ stdTTL: 60 });
 
-export const getUserAnimeList = async (username: string): Promise<MALUserAnimeListItem[]> => {
-  const cached: MALUserAnimeListItem[] | undefined = UserAnimeListCache.get(username);
-  if (cached) {
-    console.log('Found cached user anime list for ' + username);
-    return cached;
+export const getUserAnimeList = async (
+  username: string,
+  forceRefresh = false
+): Promise<MALUserAnimeListItem[]> => {
+  if (forceRefresh) {
+    console.log('Force-refreshing cached user anime list for ' + username);
+    UserAnimeListCache.del(username);
+  } else {
+    const cached: MALUserAnimeListItem[] | undefined = UserAnimeListCache.get(username);
+    if (cached) {
+      console.log('Found cached user anime list for ' + username);
+      return cached;
+    }
   }
 
   const data: MALUserAnimeListItem[] = [];

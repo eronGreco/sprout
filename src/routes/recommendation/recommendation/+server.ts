@@ -9,7 +9,8 @@ import { validateModelName } from 'src/components/recommendation/conf';
 import { getAnimesByID, type AnimeDetails } from 'src/malAPI';
 import { AnimeID, boundedArray, MAX_EXCLUDED_IDS, MAX_PROFILE_ENTRIES } from 'src/validation';
 
-const RecommendationRequest = t.type({
+const RecommendationRequest = t.intersection([
+  t.type({
   availableAnimeMetadataIDs: boundedArray(AnimeID, MAX_PROFILE_ENTRIES, 'AvailableAnimeMetadataIDs'),
   dataSource: t.union([
     t.type({
@@ -37,8 +38,12 @@ const RecommendationRequest = t.type({
   filterPlanToWatch: t.boolean,
   logitWeight: t.number,
   nicheBoostFactor: t.number,
-  popularityAttenuationFactor: t.number,
-});
+    popularityAttenuationFactor: t.number,
+  }),
+  t.partial({
+    forceProfileRefresh: t.boolean,
+  }),
+]);
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.json().catch(() => {
@@ -83,6 +88,7 @@ export const POST: RequestHandler = async ({ request }) => {
     logitWeight: Math.max(0, Math.min(1, logitWeight)),
     nicheBoostFactor: Math.max(0, Math.min(1, nicheBoostFactor)),
     popularityAttenuationFactor: Math.max(0, Math.min(0.01, req.popularityAttenuationFactor)),
+    forceProfileRefresh: req.forceProfileRefresh ?? false,
   });
   if (isLeft(recommendationsRes)) {
     return error(recommendationsRes.left.status, recommendationsRes.left.body);

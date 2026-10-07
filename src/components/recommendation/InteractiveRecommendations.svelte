@@ -3,7 +3,8 @@
     username: string,
     params: RecommendationControlParams,
     availableAnimeMetadataIDs: number[],
-    includeContributors: boolean
+    includeContributors: boolean,
+    forceProfileRefresh = false
   ): Promise<{
     recommendations: Recommendation[];
     animeData: { [animeID: number]: AnimeDetails };
@@ -16,6 +17,7 @@
         dataSource: { type: 'username', username },
         availableAnimeMetadataIDs,
         includeContributors,
+        forceProfileRefresh,
         ...params,
       }),
     }).then(async (res) => {
@@ -77,6 +79,55 @@
   const initialData = initialRecommendations.type === 'ok' ? initialRecommendations : undefined;
 
   const queryClient = new QueryClient({});
+  let isProfileRefreshing = false;
+  let profileRefreshError = '';
+
+  const forceProfileRefresh = async () => {
+    if (isProfileRefreshing) {
+      return;
+    }
+
+    isProfileRefreshing = true;
+    profileRefreshError = '';
+    try {
+      const availableAnimeMetadataIDs = Object.keys($animeMetadataDatabase).map((x) => +x);
+      const freshRecommendations = await fetchRecommendations(
+        username,
+        $params,
+        availableAnimeMetadataIDs,
+        false,
+        true
+      );
+      updateAnimeDB(freshRecommendations.animeData);
+      lastRecosRes = freshRecommendations;
+      queryClient.setQueryData(['recommendations', username, $params], freshRecommendations);
+
+      // Contributions are a second recommendation query. Refresh them only after the forced MAL
+      // fetch completes so they reuse the newly cached profile instead of racing the refresh.
+      const freshContributors = await fetchRecommendations(
+        username,
+        $params,
+        Object.keys($animeMetadataDatabase).map((x) => +x),
+        true,
+        false
+      );
+      updateAnimeDB(freshContributors.animeData);
+      queryClient.setQueryData(['recommendations_contributors', username, $params], freshContributors);
+
+      submitAnalyticsEvent({
+        category: 'recommendations',
+        subcategory: 'profile_force_refresh',
+        payload: { source: $params.profileSource, model: $params.modelName, surface: getSurface() },
+      });
+    } catch (err) {
+      profileRefreshError = typeof err === 'string' ? err : err instanceof Error ? err.message : 'Refresh failed';
+      getSentry()?.captureException('Error force-refreshing recommendation profile', {
+        extra: { params: $params, username },
+      });
+    } finally {
+      isProfileRefreshing = false;
+    }
+  };
 
   let lastRecosRes:
     | {
@@ -224,6 +275,9 @@
       isLoading={$recosRes.isLoading || $recosRes.isRefetching}
       {genresDB}
       hideLogitWeight={userRatingStats?.isNonRater ?? false}
+      onForceProfileRefresh={forceProfileRefresh}
+      {isProfileRefreshing}
+      {profileRefreshError}
     />
     <RecommendationsList
       recommendations={recommendations?.recommendations ?? []}
