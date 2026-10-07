@@ -22,15 +22,17 @@
   import { Dropdown, InlineLoading, Tag, Toggle, Slider } from 'carbon-components-svelte';
   import SettingsAdjust from 'carbon-icons-svelte/lib/SettingsAdjust.svelte';
   import Renew from 'carbon-icons-svelte/lib/Renew.svelte';
+  import Layers from 'carbon-icons-svelte/lib/Layers.svelte';
+  import Video from 'carbon-icons-svelte/lib/Video.svelte';
+  import Playlist from 'carbon-icons-svelte/lib/Playlist.svelte';
+  import Music from 'carbon-icons-svelte/lib/Music.svelte';
+  import ChevronDown from 'carbon-icons-svelte/lib/ChevronDown.svelte';
+  import HelpTip from './HelpTip.svelte';
   import type { Writable } from 'svelte/store';
 
   import type { AnimeDetails } from 'src/malAPI';
-  import { browser } from '$app/environment';
   import { getSurface, submitAnalyticsEvent } from 'src/analytics';
   import type { RecommendationControlParams } from './utils';
-
-  let innerWidth = browser ? window.innerWidth : 0;
-  $: isMobile = innerWidth < 768;
 
   export let params: Writable<RecommendationControlParams>;
   export let animeMetadataDatabase: { [animeID: number]: AnimeDetails };
@@ -56,88 +58,100 @@
       subcategory: 'filter_toggle',
       payload: { filter, enabled, surface: getSurface() },
     });
-
-  // Sync local state with params store when params change from outside
-  // $: localLogitWeight = $params.logitWeight;
-  // $: localNicheBoostFactor = $params.nicheBoostFactor;
 </script>
 
-<svelte:window bind:innerWidth />
-
 <div class="root">
-  <div class="section-title"><SettingsAdjust size={20} aria-hidden="true" /><span>Recommendation settings</span></div>
+  <div class="panel-header">
+    <div class="section-title">
+      <span class="heading-icon"><SettingsAdjust size={20} aria-hidden="true" /></span>
+      <div>
+        <h2>Recommendation settings</h2>
+        <p>Choose what to include</p>
+      </div>
+    </div>
+    {#if $params.profileSource === ProfileSource.MyAnimeList && onForceProfileRefresh}
+      <div class="profile-refresh">
+        <button
+          type="button"
+          disabled={isProfileRefreshing || isLoading || $params.modelName === ModelName.Legacy_2023}
+          on:click={() => onForceProfileRefresh?.()}
+        >
+          <Renew size={16} aria-hidden="true" />
+          {isProfileRefreshing ? 'Refreshing…' : 'Refresh MyAnimeList'}
+        </button>
+        <HelpTip
+          label="MyAnimeList refresh"
+          text={$params.modelName === ModelName.Legacy_2023
+            ? 'Force refresh is unavailable for Legacy (2023), which is served by a separate legacy deployment.'
+            : 'Sprout caches MyAnimeList lists for 60 seconds after fetching them; an open page does not update automatically. Refresh bypasses Sprout’s cache and updates recommendations using the list currently returned by MAL. Changes still depend on MAL making them available through its API.'}
+        />
+      </div>
+    {/if}
+  </div>
+  {#if profileRefreshError}<p class="refresh-error" role="alert">{profileRefreshError}</p>{/if}
   <div class="toggles">
-    <div>
+    <div class:enabled={$params.includeExtraSeasons}>
+      <div class="toggle-heading">
+        <Layers size={20} aria-hidden="true" /><span>Extra Seasons</span><HelpTip
+          label="Extra Seasons"
+          text="Off hides TV/unknown recommendations connected through sequel, prequel, parent-story, or side-story relationships to anime you already watched. Other formats have their own switches. On allows these extra seasons/stories."
+        />
+      </div>
       <Toggle
         labelText="Extra Seasons"
+        size="sm"
+        hideLabel
         bind:toggled={$params.includeExtraSeasons}
         on:toggle={(evt) => submitFilterToggle('extra_seasons', evt.detail.toggled)}
       />
-      <span class="toggle-helper">
-        Off hides TV/unknown recommendations connected through sequel, prequel, parent-story, or side-story
-        relationships to anime you already watched. Other formats are controlled by their own toggles. On allows these
-        extra seasons/stories.
-      </span>
     </div>
-    <div>
+    <div class:enabled={$params.includeMovies}>
+      <div class="toggle-heading">
+        <Video size={20} aria-hidden="true" /><span>Movies</span><HelpTip
+          label="Movies"
+          text="Off excludes MAL entries whose format is Movie. On allows movies."
+        />
+      </div>
       <Toggle
         labelText="Movies"
+        size="sm"
+        hideLabel
         bind:toggled={$params.includeMovies}
         on:toggle={(evt) => submitFilterToggle('movies', evt.detail.toggled)}
       />
-      <span class="toggle-helper">Off excludes MAL entries whose media type is Movie. On allows movies.</span>
     </div>
-    <div>
+    <div class:enabled={$params.includeONAsOVAsSpecials}>
+      <div class="toggle-heading">
+        <Playlist size={20} aria-hidden="true" /><span>ONAs / OVAs / Specials</span><HelpTip
+          label="ONAs / OVAs / Specials"
+          text="Off excludes ONA, OVA, Special, and TV Special entries. On allows these formats."
+        />
+      </div>
       <Toggle
         labelText="ONAs / OVAs / Specials"
+        size="sm"
+        hideLabel
         bind:toggled={$params.includeONAsOVAsSpecials}
         on:toggle={(evt) => submitFilterToggle('onas_ovas_specials', evt.detail.toggled)}
       />
-      <span class="toggle-helper">Off excludes ONA, OVA, Special, and TV Special entries. On allows them.</span>
     </div>
-    <div style="position: relative">
+    <div class:enabled={$params.includeMusic}>
+      <div class="toggle-heading">
+        <Music size={20} aria-hidden="true" /><span>Music</span><HelpTip
+          label="Music"
+          text="Off excludes Music, commercials (CM), and promotional videos (PV). On allows them."
+        />
+      </div>
       <Toggle
         labelText="Music"
+        size="sm"
+        hideLabel
         bind:toggled={$params.includeMusic}
         on:toggle={(evt) => submitFilterToggle('music', evt.detail.toggled)}
       />
-      <span class="toggle-helper"
-        >Off excludes Music, commercials (CM), and promotional videos (PV). On allows them.</span
-      >
-      {#if isLoading && isMobile}
-        <div style="position: absolute; right: -4px; bottom: -4px; flex: 0;">
-          <InlineLoading />
-        </div>
-      {/if}
     </div>
-    {#if !isMobile && isLoading}
-      <InlineLoading style="flex: 0; margin-left: 10px;" />
-    {/if}
   </div>
-  {#if $params.profileSource === ProfileSource.MyAnimeList && onForceProfileRefresh}
-    <div class="profile-refresh">
-      <button
-        type="button"
-        disabled={isProfileRefreshing || isLoading || $params.modelName === ModelName.Legacy_2023}
-        on:click={() => onForceProfileRefresh?.()}
-      >
-        <Renew size={16} aria-hidden="true" />
-        {isProfileRefreshing ? 'Refreshing MyAnimeList…' : 'Refresh MyAnimeList data'}
-      </button>
-      <span class="helper-text">
-        {#if $params.modelName === ModelName.Legacy_2023}
-          Force refresh is unavailable for Legacy (2023), which is served by a separate legacy deployment.
-        {:else}
-          Sprout caches MyAnimeList lists for 60 seconds after fetching them; an open page does not update
-          automatically. This button bypasses Sprout's profile cache, requests the list currently returned by MAL, and
-          updates the recommendations. Updates still depend on MAL making your changes available through its API.
-        {/if}
-      </span>
-      {#if profileRefreshError}
-        <span class="refresh-error">{profileRefreshError}</span>
-      {/if}
-    </div>
-  {/if}
+  {#if isLoading}<div class="loading-status"><InlineLoading description="Updating recommendations…" /></div>{/if}
   {#if !forceHideTopBar}
     <details
       class="advanced-options"
@@ -148,13 +162,24 @@
           payload: { surface: getSurface() },
         })}
     >
-      <summary>Advanced Options</summary>
+      <summary
+        ><span>Advanced Options</span><span class="model-caption"
+          >{ALL_MODEL_OPTIONS.find((model) => model.id === $params.modelName)?.text}</span
+        ><ChevronDown size={16} aria-hidden="true" /></summary
+      >
       <div class="top">
         <div class="top-row">
           <div>
+            <div class="field-heading">
+              <span>Model</span><HelpTip
+                label="Model"
+                text="Chooses the trained recommendation version. Aug. 2026 is the default, v2 is experimental, Dec. 2025 is the previous model, and Legacy uses the older 2023 serving path. Changing model can change scores and ranking order."
+              />
+            </div>
             <Dropdown
               style="width: 100%;"
               titleText="Model"
+              hideLabel
               selectedId={$params.modelName}
               on:select={(selected) => {
                 const model = selected.detail.selectedItem.id;
@@ -172,27 +197,37 @@
                 $params.modelName = model;
               }}
               items={ALL_MODEL_OPTIONS}
-              helperText="Chooses the trained recommendation version. Aug. 2026 is the current default, v2 is experimental, Dec. 2025 is the previous model, and Legacy uses the older 2023 serving path. Changing model can change scores and ranking order."
             />
           </div>
           <div>
+            <div class="field-heading">
+              <span>Filter Plan to Watch</span><HelpTip
+                label="Filter Plan to Watch"
+                text="On removes anime already marked Plan to Watch in your profile. Off keeps them eligible and labels them in the results."
+              />
+            </div>
             <Toggle
               labelText="Filter Plan to Watch"
+              hideLabel
+              size="sm"
               bind:toggled={$params.filterPlanToWatch}
               on:toggle={(evt) => submitFilterToggle('plan_to_watch', evt.detail.toggled)}
             />
-            <span class="helper-text"
-              >On removes anime already marked Plan to Watch in your profile. Off keeps them eligible and labels them in
-              the results.</span
-            >
           </div>
         </div>
         <div class="bottom-row">
           {#if $params.modelName === ModelName.Legacy_2023}
             <div>
+              <div class="field-heading">
+                <span>Popularity attenuation</span><HelpTip
+                  label="Popularity attenuation"
+                  text="Legacy model only. Higher values increasingly favor less-popular anime; None preserves the legacy ranking without this adjustment."
+                />
+              </div>
               <Dropdown
                 style="width: 100%;"
                 titleText="Popularity Attenuation Factor"
+                hideLabel
                 selectedId={$params.popularityAttenuationFactor}
                 on:select={(selected) => {
                   const value = selected.detail.selectedItem.id;
@@ -206,14 +241,20 @@
                   $params.popularityAttenuationFactor = value;
                 }}
                 items={ALL_POPULARITY_ATTENUATION_FACTOR_OPTIONS}
-                helperText="Legacy model only. Higher values increasingly favor less-popular anime; None preserves the legacy model ranking without this adjustment."
               />
             </div>
           {:else}
             {#if !hideLogitWeight}
               <div>
+                <div class="field-heading">
+                  <span>Presence / Rating Weight</span><HelpTip
+                    label="Presence / Rating Weight"
+                    text="0 prioritizes your predicted 1–10 rating; 1 prioritizes how strongly the model expects the anime to belong in your profile. Intermediate values blend both signals."
+                  />
+                </div>
                 <Slider
                   labelText="Presence/Rating Weight"
+                  hideLabel
                   min={0}
                   max={1}
                   step={0.1}
@@ -229,15 +270,19 @@
                     $params.logitWeight = evt.detail;
                   }}
                 />
-                <span class="helper-text">
-                  0 prioritizes your predicted 1–10 rating; 1 prioritizes how strongly the model expects the anime to
-                  belong in your profile. Intermediate values blend both signals.
-                </span>
+                <div class="slider-captions"><span>Predicted rating</span><span>Profile match</span></div>
               </div>
             {/if}
             <div>
+              <div class="field-heading">
+                <span>Niche Boost Factor</span><HelpTip
+                  label="Niche Boost Factor"
+                  text="0 adds no niche boost. Higher values increasingly favor anime the model predicts for you more strongly than their overall popularity would suggest."
+                />
+              </div>
               <Slider
                 labelText="Niche Boost Factor"
+                hideLabel
                 min={0}
                 max={1}
                 step={0.1}
@@ -253,10 +298,7 @@
                   $params.nicheBoostFactor = evt.detail;
                 }}
               />
-              <span class="helper-text">
-                0 adds no niche boost. Higher values increasingly favor anime the model predicts for you more strongly
-                than their overall popularity would suggest.
-              </span>
+              <div class="slider-captions"><span>No boost</span><span>More discovery</span></div>
             </div>
           {/if}
         </div>
@@ -298,176 +340,272 @@
   .root {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 5px 0px 10px 0px;
-    border-bottom: 1px solid #cccccc22;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid #ffffff18;
+    border-radius: 12px;
+    background: #171c19;
   }
-
-  .section-title {
+  .panel-header,
+  .section-title,
+  .profile-refresh {
     display: flex;
     align-items: center;
-    gap: 7px;
   }
-
-  .section-title {
-    color: #d7e4da;
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .top {
-    display: flex;
-    flex-direction: row;
-    min-width: 100%;
+  .panel-header {
+    justify-content: space-between;
     gap: 16px;
-    padding: 4px;
+    flex-wrap: wrap;
   }
-
+  .section-title {
+    gap: 12px;
+  }
+  .heading-icon {
+    display: flex;
+    padding: 10px;
+    border-radius: 10px;
+    background: #77d58512;
+    color: #88da95;
+  }
+  h2 {
+    color: #edf3ef;
+    font-size: 16px;
+    line-height: 1.4;
+    font-weight: 600;
+    margin: 0;
+  }
+  .section-title p {
+    margin: 3px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #99a69f;
+  }
+  .toggles {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .toggles > div {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #ffffff15;
+    border-radius: 8px;
+    background: #202622;
+    min-width: 0;
+  }
+  .toggles > div.enabled {
+    border-color: #77d58550;
+    background: #233429;
+  }
+  .toggle-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 30px;
+    color: #c8d5cd;
+  }
+  .toggle-heading > span {
+    flex: 1;
+    padding-top: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .toggle-heading > :global(svg) {
+    flex: none;
+    margin-top: 5px;
+    color: #8fa69a;
+  }
+  .toggles :global(.bx--toggle-input__label) {
+    font-size: 12px;
+    color: #c8d5cd;
+  }
+  .toggles :global(.bx--form-item) {
+    flex: none;
+    margin-top: auto;
+  }
+  .profile-refresh {
+    gap: 2px;
+  }
+  .profile-refresh button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #ffffff26;
+    border-radius: 7px;
+    background: #252e28;
+    color: #e0eae3;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .profile-refresh button:hover:not(:disabled) {
+    border-color: #77d58570;
+    background: #2c3930;
+  }
+  .profile-refresh button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .profile-refresh button:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid #75dc82;
+    outline-offset: 3px;
+  }
+  .refresh-error {
+    padding: 10px 12px;
+    margin: 0;
+    color: #ffb2b6;
+    background: #ff83890c;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .loading-status {
+    min-width: 0;
+  }
+  .advanced-options {
+    border-top: 1px solid #ffffff14;
+  }
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    list-style: none;
+    padding: 16px 0 0;
+    color: #c8d5cd;
+    font-size: 13px;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary > span:first-child {
+    flex: 1;
+  }
+  .model-caption {
+    font-size: 11px;
+    color: #9caca2;
+    background: #ffffff08;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .advanced-options[open] summary :global(svg) {
+    transform: rotate(180deg);
+  }
+  .top {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding-top: 16px;
+  }
   .top-row,
   .bottom-row {
-    display: flex;
-    flex-direction: row;
-    gap: 16px;
+    display: contents;
   }
-
   .top-row > div,
   .bottom-row > div {
     display: flex;
-    flex: 1;
     flex-direction: column;
     min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid #ffffff10;
+    border-radius: 8px;
+    background: #1d2420;
+    gap: 10px;
   }
-
-  .top > div {
+  .field-heading {
     display: flex;
-    flex: 1;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    color: #c8d5cd;
+    font-size: 13px;
+    line-height: 1.4;
   }
-
   .top :global(.bx--slider-container) {
     min-width: 0;
     width: 100%;
   }
-
   .top :global(.bx--slider) {
     min-width: 0;
     flex: 1;
   }
-
   .top :global(.bx--slider-text-input) {
-    min-width: 48px;
-    width: 48px;
+    min-width: 52px;
+    width: 52px;
+    padding: 0 5px;
+    border-radius: 4px;
   }
-
-  .toggles {
+  .top :global(.bx--dropdown) {
+    border: 1px solid #ffffff25;
+    border-radius: 5px;
+    background: #262e29;
+  }
+  .top :global(.bx--label.bx--visually-hidden) {
+    margin: 0;
+  }
+  .top :global(.bx--toggle-input__label) {
+    min-height: 42px;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    flex: 1;
+    align-items: center;
+  }
+  .slider-captions {
+    display: flex;
+    justify-content: space-between;
     gap: 8px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #93a399;
   }
-
-  .toggles > div {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    padding: 12px;
-    box-sizing: border-box;
-    border: 1px solid #ffffff16;
-    border-radius: 8px;
-    background: #191d1b;
-    flex: 1 1 190px;
-    min-width: 0;
-  }
-
-  .toggle-helper {
-    font-size: 0.72rem;
-    line-height: 1.25;
-    color: #9ba3ab;
-  }
-
-  .profile-refresh {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .profile-refresh button {
-    border: 1px solid #6f6f6f;
-    background: #2b2b2b;
-    color: #f4f4f4;
-    padding: 7px 12px;
-    cursor: pointer;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    border-radius: 6px;
-  }
-
-  .profile-refresh button:hover:not(:disabled) {
-    background: #353535;
-  }
-
-  .profile-refresh button:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-
-  .refresh-error {
-    color: #ff8389;
-    font-size: 0.75rem;
-  }
-
-  @media (max-width: 768px) {
-    .toggles > div {
-      flex: 1 1 calc(50% - 8px);
-      min-width: 0;
-    }
-
-    .profile-refresh {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 5px;
-    }
-  }
-
-  .toggles > div:first-child {
-    border-left: 1px solid #cccccc22;
-  }
-
   .tags-container {
     display: flex;
-    flex-direction: row;
     flex-wrap: wrap;
   }
-
-  .helper-text {
-    font-size: 0.75rem;
-    color: #a8a8a8;
-    margin-top: 4px;
+  @media (max-width: 1000px) {
+    .toggles {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
-
-  .advanced-options {
-    background: #1b201d;
-    padding: 12px;
-    border: 1px solid #ffffff16;
-    border-radius: 8px;
-  }
-
-  summary {
-    cursor: pointer;
-    padding: 4px 0;
-  }
-
-  summary:focus-visible {
-    outline: 2px solid #78a9ff;
-    outline-offset: 4px;
-  }
-
-  @media (max-width: 768px) {
+  @media (max-width: 560px) {
+    .root {
+      padding: 16px;
+      gap: 14px;
+    }
+    .panel-header {
+      gap: 12px;
+    }
     .top {
-      flex-direction: column;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .toggle-heading {
+      gap: 5px;
+    }
+    .toggle-heading > :global(svg) {
+      display: none;
+    }
+    .toggles > div {
+      padding: 9px 10px;
+    }
+    .profile-refresh {
+      width: 100%;
+    }
+    .profile-refresh button {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+  @media (max-width: 360px) {
+    .toggles {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .toggle-heading > :global(svg) {
+      display: block;
     }
   }
 </style>

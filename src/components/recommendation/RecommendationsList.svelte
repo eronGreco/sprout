@@ -13,6 +13,8 @@
   import Video from 'carbon-icons-svelte/lib/Video.svelte';
   import Catalog from 'carbon-icons-svelte/lib/Catalog.svelte';
   import GenreIcon from './GenreIcon.svelte';
+  import HelpTip from './HelpTip.svelte';
+  import Reset from 'carbon-icons-svelte/lib/Reset.svelte';
 
   export let recommendations: Recommendation[];
   export let animeMetadataDatabase: { [animeID: number]: AnimeDetails };
@@ -26,13 +28,7 @@
   export let userRatingStats: UserRatingStats | null = null;
   export let contributionBaseline: number | undefined = undefined;
 
-  type SortMode =
-    | 'model'
-    | 'predicted-desc'
-    | 'predicted-asc'
-    | 'year-desc'
-    | 'year-asc'
-    | 'title-asc';
+  type SortMode = 'model' | 'predicted-desc' | 'predicted-asc' | 'year-desc' | 'year-asc' | 'title-asc';
 
   const MEDIA_TYPE_NAMES: { [mediaType: string]: string } = {
     tv: 'TV',
@@ -199,11 +195,7 @@
   };
 
   $: displayFiltersActive =
-    !!genreFilter ||
-    !!mediaTypeFilter ||
-    yearFrom !== undefined ||
-    yearTo !== undefined ||
-    excludedGenreIDs.length > 0;
+    !!genreFilter || !!mediaTypeFilter || yearFrom !== undefined || yearTo !== undefined || excludedGenreIDs.length > 0;
 
   let expandedAnimeID: number | null = null;
   $: if (expandedAnimeID !== null && !displayRecommendations.some((reco) => reco.id === expandedAnimeID)) {
@@ -211,94 +203,105 @@
   }
 </script>
 
-<div class="browse-heading"><Filter size={20} aria-hidden="true" /><span>Browse recommendations</span></div>
-<div class="browse-controls">
-  <div class="control">
-    <label for="recommendation-sort"><ArrowsVertical size={16} aria-hidden="true" />Sort</label>
-    <select id="recommendation-sort" bind:value={sortMode}>
-      <option value="model">Recommended order (default)</option>
-      <option value="predicted-desc" disabled={!hasPredictedRatings}>Predicted rating: high to low</option>
-      <option value="predicted-asc" disabled={!hasPredictedRatings}>Predicted rating: low to high</option>
-      <option value="year-desc">Year: newest first</option>
-      <option value="year-asc">Year: oldest first</option>
-      <option value="title-asc">Title: A–Z</option>
-    </select>
-  </div>
-
-  <div class="control">
-    <label for="genre-filter"
-      >{#if genreFilter}<GenreIcon name={genreFilter} />{:else}<Catalog size={16} aria-hidden="true" />{/if}Genre</label
-    >
-    <select id="genre-filter" bind:value={genreFilter}>
-      <option value="">All genres</option>
-      {#if genreFilter && !availableGenres.includes(genreFilter)}
-        <option value={genreFilter}>{genreFilter} (not in current results)</option>
-      {/if}
-      {#each availableGenres as genre}
-        <option value={genre}>{genre}</option>
-      {/each}
-    </select>
-  </div>
-
-  <div class="control">
-    <label for="format-filter"><Video size={16} aria-hidden="true" />Format</label>
-    <select id="format-filter" bind:value={mediaTypeFilter}>
-      <option value="">All enabled formats</option>
-      {#if mediaTypeFilter && !availableMediaTypes.some((mediaType) => mediaType === mediaTypeFilter)}
-        <option value={mediaTypeFilter}
-          >{MEDIA_TYPE_NAMES[mediaTypeFilter] ?? mediaTypeFilter} (not in current results)</option
-        >
-      {/if}
-      {#each availableMediaTypes as mediaType}
-        <option value={mediaType}>{MEDIA_TYPE_NAMES[mediaType] ?? mediaType}</option>
-      {/each}
-    </select>
-  </div>
-
-  <div class="control year-control">
-    <label for="year-from"><Calendar size={16} aria-hidden="true" />Year</label>
-    <div>
-      <input id="year-from" type="number" min="1900" max="2200" placeholder="From" bind:value={yearFrom} />
-      <span>–</span>
-      <input type="number" min="1900" max="2200" placeholder="To" aria-label="Year to" bind:value={yearTo} />
+<div class="browse-panel">
+  <div class="browse-header">
+    <div class="browse-heading">
+      <Filter size={20} aria-hidden="true" />
+      <h2>Browse recommendations</h2>
+      <HelpTip
+        label="List filters"
+        text="Genre, Format, and Year narrow the recommendations already generated. Exclude genres requests new recommendations without the checked genres. Clear filters restores all genres and clears the list filters while keeping your chosen sort order."
+      />
+    </div>
+    <div class="control-actions">
+      <span role="status">{displayRecommendations.length} / {recommendations.length} results</span>
+      <button type="button" on:click={clearDisplayFilters} disabled={!displayFiltersActive}
+        ><Reset size={16} aria-hidden="true" />Clear filters</button
+      >
     </div>
   </div>
-
-  <div class="control-actions">
-    <span role="status">{displayRecommendations.length} of {recommendations.length}</span>
-    <button type="button" on:click={clearDisplayFilters} disabled={!displayFiltersActive}>Clear filters</button>
-  </div>
-  {#if excludeGenre && includeGenre}
-    <details class="genre-exclusions">
-      <summary
-        >Exclude genres{#if excludedGenreIDs.length}
-          · {excludedGenreIDs.length} active{/if}</summary
-      >
-      <p>
-        Checked genres are excluded from all recommendations and trigger a new model request. Uncheck a genre to restore
-        it, or use Clear filters.
-      </p>
-      <div class="genre-options">
-        {#each exclusionGenres as [id, name] (id)}
-          <label class:excluded={excludedGenreIDs.includes(id)}>
-            <input
-              type="checkbox"
-              checked={excludedGenreIDs.includes(id)}
-              on:change={(evt) => (evt.currentTarget.checked ? excludeGenre?.(id, name) : includeGenre?.(id))}
-            />
-            <GenreIcon {name} /><span>{name}</span>
-          </label>
-        {/each}
+  <div class="browse-controls">
+    <div class="control sort-control">
+      <div class="control-heading">
+        <label for="recommendation-sort"><ArrowsVertical size={16} aria-hidden="true" />Sort</label><HelpTip
+          label="Sort order"
+          text="Recommended order (default) keeps Sprout’s original recommendation order. Predicted rating sorts by the personalized 1–10 estimate shown beside each title; it is available only when the model provides rating predictions. You can also sort by year or title."
+        />
       </div>
-    </details>
-  {/if}
-</div>
+      <select id="recommendation-sort" bind:value={sortMode}>
+        <option value="model">Recommended order (default)</option>
+        <option value="predicted-desc" disabled={!hasPredictedRatings}>Predicted rating: high to low</option>
+        <option value="predicted-asc" disabled={!hasPredictedRatings}>Predicted rating: low to high</option>
+        <option value="year-desc">Year: newest first</option>
+        <option value="year-asc">Year: oldest first</option>
+        <option value="title-asc">Title: A–Z</option>
+      </select>
+    </div>
 
-<div class="browse-helper">
-  <b>Recommended order (default)</b> keeps Sprout's original recommendation order. <b>Predicted rating</b> sorts by the
-  personalized 1–10 estimate shown beside each title. Sort and the Genre, Format, and Year filters organize the
-  recommendations already generated. Exclude genres requests new recommendations without the checked genres. The current
-  metadata exposes MAL genres, format, year, and titles; it does not expose a separate free-form tag taxonomy.
+    <div class="control">
+      <label for="genre-filter"
+        >{#if genreFilter}<GenreIcon name={genreFilter} />{:else}<Catalog
+            size={16}
+            aria-hidden="true"
+          />{/if}Genre</label
+      >
+      <select id="genre-filter" bind:value={genreFilter}>
+        <option value="">All genres</option>
+        {#if genreFilter && !availableGenres.includes(genreFilter)}
+          <option value={genreFilter}>{genreFilter} (not in current results)</option>
+        {/if}
+        {#each availableGenres as genre}
+          <option value={genre}>{genre}</option>
+        {/each}
+      </select>
+    </div>
+
+    <div class="control">
+      <label for="format-filter"><Video size={16} aria-hidden="true" />Format</label>
+      <select id="format-filter" bind:value={mediaTypeFilter}>
+        <option value="">All enabled formats</option>
+        {#if mediaTypeFilter && !availableMediaTypes.some((mediaType) => mediaType === mediaTypeFilter)}
+          <option value={mediaTypeFilter}
+            >{MEDIA_TYPE_NAMES[mediaTypeFilter] ?? mediaTypeFilter} (not in current results)</option
+          >
+        {/if}
+        {#each availableMediaTypes as mediaType}
+          <option value={mediaType}>{MEDIA_TYPE_NAMES[mediaType] ?? mediaType}</option>
+        {/each}
+      </select>
+    </div>
+
+    <div class="control year-control">
+      <label for="year-from"><Calendar size={16} aria-hidden="true" />Year</label>
+      <div>
+        <input id="year-from" type="number" min="1900" max="2200" placeholder="From" bind:value={yearFrom} />
+        <span>–</span>
+        <input type="number" min="1900" max="2200" placeholder="To" aria-label="Year to" bind:value={yearTo} />
+      </div>
+    </div>
+
+    {#if excludeGenre && includeGenre}
+      <details class="genre-exclusions">
+        <summary
+          >Exclude genres{#if excludedGenreIDs.length}
+            · {excludedGenreIDs.length} active{/if}</summary
+        >
+        <p>Checked genres are excluded from recommendations. Uncheck to restore them.</p>
+        <div class="genre-options">
+          {#each exclusionGenres as [id, name] (id)}
+            <label class:excluded={excludedGenreIDs.includes(id)}>
+              <input
+                type="checkbox"
+                checked={excludedGenreIDs.includes(id)}
+                on:change={(evt) => (evt.currentTarget.checked ? excludeGenre?.(id, name) : includeGenre?.(id))}
+              />
+              <GenreIcon {name} /><span>{name}</span>
+            </label>
+          {/each}
+        </div>
+      </details>
+    {/if}
+  </div>
 </div>
 
 <div class="recommendations">
@@ -340,185 +343,209 @@
 </div>
 
 <style lang="css">
-  .genre-exclusions {
-    grid-column: 1 / -1;
-    border-top: 1px solid #ffffff16;
-    padding-top: 10px;
+  .browse-panel {
+    padding: 20px;
+    margin: 14px 0;
+    border: 1px solid #ffffff18;
+    border-radius: 12px;
+    background: #171c19;
   }
-
-  .genre-exclusions summary {
-    cursor: pointer;
-    color: #d7e4da;
+  .browse-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .browse-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: #88da95;
+  }
+  h2 {
+    color: #edf3ef;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0;
+  }
+  .browse-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 14px;
+    align-items: end;
+  }
+  .control {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .control-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 30px;
+  }
+  .control label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #aabbb0;
+    min-height: 30px;
+  }
+  .control select,
+  .control input {
+    min-height: 42px;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #ffffff26;
+    border-radius: 6px;
+    background: #252d28;
+    color: #e6eee9;
+    padding: 8px 10px;
+    box-sizing: border-box;
     font-size: 13px;
   }
-
+  .control select:hover,
+  .control input:hover {
+    border-color: #9db6a566;
+  }
+  .control select:focus-visible,
+  .control input:focus-visible,
+  button:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid #75dc82;
+    outline-offset: 3px;
+  }
+  .year-control > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #82948a;
+  }
+  .control-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .control-actions span {
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: #a5b6ab;
+    white-space: nowrap;
+  }
+  .control-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 34px;
+    border: 1px solid #ffffff22;
+    border-radius: 6px;
+    background: transparent;
+    color: #c5d7cc;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .control-actions button:hover:not(:disabled) {
+    background: #77d58515;
+    border-color: #77d58560;
+  }
+  .control-actions button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .genre-exclusions {
+    grid-column: 1 / -1;
+    border-top: 1px solid #ffffff14;
+    margin-top: 2px;
+    padding-top: 14px;
+  }
+  .genre-exclusions summary {
+    cursor: pointer;
+    color: #a8bcaf;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .genre-exclusions[open] summary {
+    color: #8ce295;
+  }
   .genre-exclusions p {
     font-size: 12px;
-    line-height: 1.4;
-    color: #a8b0b8;
-    margin: 8px 0;
+    line-height: 1.5;
+    color: #99a99f;
+    margin: 12px 0;
   }
-
   .genre-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
   }
-
   .genre-options label {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 9px;
-    border: 1px solid #ffffff20;
+    gap: 7px;
+    padding: 8px 10px;
+    border: 1px solid #ffffff22;
     border-radius: 6px;
     font-size: 12px;
+    color: #cad7cf;
     cursor: pointer;
   }
-
+  .genre-options label:hover {
+    background: #ffffff08;
+  }
   .genre-options label.excluded {
     border-color: #bc8b61;
     background: #372b23;
   }
-
   .genre-options input {
-    accent-color: #55d95f;
+    accent-color: #78d886;
   }
-
-  .browse-heading {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    color: #d7e4da;
-    font-size: 14px;
-    font-weight: 500;
-    padding-top: 16px;
-  }
-
-  .browse-controls {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
-    gap: 8px;
-    align-items: end;
-    padding: 12px;
-    margin-top: 10px;
-    border: 1px solid #ffffff16;
-    border-radius: 8px;
-    background: #191d1b;
-    border-bottom: 1px solid #cccccc22;
-  }
-
-  .control {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .control label {
-    font-size: 0.75rem;
-    color: #c6c6c6;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .control select,
-  .control input,
-  .control-actions button {
-    min-height: 38px;
-    border: 1px solid #525252;
-    background: #262626;
-    color: #f4f4f4;
-    padding: 5px 8px;
-    box-sizing: border-box;
-    border-radius: 5px;
-  }
-
-  .control select,
-  .control input {
-    width: 100%;
-  }
-
-  .control select:focus-visible,
-  .control input:focus-visible,
-  .control-actions button:focus-visible {
-    outline: 2px solid #55d95f;
-    outline-offset: 2px;
-  }
-
-  .year-control > div {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .year-control input {
-    min-width: 0;
-  }
-
-  .control-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-  }
-
-  .control-actions span {
-    font-size: 0.75rem;
-    color: #a8a8a8;
-  }
-
-  .control-actions button {
-    cursor: pointer;
-  }
-
-  .control-actions button:hover:not(:disabled) {
-    background: #353535;
-  }
-
-  .control-actions button:disabled {
-    cursor: default;
-    opacity: 0.45;
-  }
-
-  .browse-helper {
-    padding: 10px 2px 14px;
-    font-size: 0.75rem;
-    line-height: 1.35;
-    color: #9ba3ab;
-    border-bottom: 1px solid #cccccc22;
-  }
-
   .recommendations {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
-
   .empty-results {
-    padding: 20px 8px;
-    color: #c6c6c6;
+    padding: 24px;
+    border: 1px dashed #ffffff25;
+    border-radius: 10px;
+    color: #a5b6ab;
+    font-size: 14px;
+    line-height: 1.5;
   }
-
-  @media (max-width: 1100px) {
-    .browse-controls {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 768px) {
+  @media (max-width: 800px) {
     .browse-controls {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
+  }
+  @media (max-width: 560px) {
+    .browse-panel {
+      padding: 16px;
+    }
+    .browse-header {
+      gap: 8px;
+    }
     .control-actions {
-      align-self: stretch;
       justify-content: space-between;
+      width: 100%;
+    }
+    .sort-control,
+    .year-control {
+      grid-column: 1 / -1;
+    }
+    .browse-controls {
+      gap: 10px;
     }
   }
-
-  @media (max-width: 480px) {
+  @media (max-width: 360px) {
     .browse-controls {
       grid-template-columns: minmax(0, 1fr);
     }

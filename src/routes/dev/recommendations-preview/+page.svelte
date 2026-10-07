@@ -1,5 +1,6 @@
 <script lang="ts">
   import { writable, type Writable } from 'svelte/store';
+  import { browser } from '$app/environment';
 
   import RecommendationControls from 'src/components/recommendation/RecommendationControls.svelte';
   import RecommendationsList from 'src/components/recommendation/RecommendationsList.svelte';
@@ -144,6 +145,21 @@
     { id: 107, score: 0.61, predictedRating: 8.1 },
     { id: 108, score: 0.57, predictedRating: 7.5 },
   ];
+
+  // Optional development-only fixture for responsive edge cases: ?scenario=layout.
+  const stressLayout = browser && new URLSearchParams(window.location.search).get('scenario') === 'layout';
+  if (stressLayout) {
+    animeMetadataDatabase[101].alternative_titles.en =
+      'Shadow of the Stars: An Unexpected Journey Across the Entire Universe and Back Again';
+    animeMetadataDatabase[101].genres = Object.values(animeMetadataDatabase)
+      .flatMap((anime) => anime.genres ?? [])
+      .filter((genre, index, genres) => genres.findIndex((item) => item.id === genre.id) === index);
+    animeMetadataDatabase[103].synopsis = '';
+    animeMetadataDatabase[103].main_picture = { medium: '', large: '' };
+    animeMetadataDatabase[104].start_date = '';
+    animeMetadataDatabase[104].num_episodes = 0;
+    sampleRecommendations[2].predictedRating = undefined;
+  }
 
   // Sample 107 represents a TV story related to a watched title. Model sliders are
   // deliberately not simulated: their scores require the real model server.

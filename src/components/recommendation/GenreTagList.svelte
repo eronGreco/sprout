@@ -142,7 +142,7 @@
     flex-wrap: wrap;
     gap: 4px;
     align-content: flex-start;
-    padding: 4px;
+    padding: 0;
     height: 100%;
     overflow: hidden;
     box-sizing: border-box;
