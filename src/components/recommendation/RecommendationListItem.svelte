@@ -275,6 +275,8 @@
     height: 120px;
     padding: 0;
     border: 0;
+    border-bottom-right-radius: 10px;
+    overflow: hidden;
     background: #202823;
     cursor: pointer;
   }
