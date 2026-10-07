@@ -1,5 +1,5 @@
 <script lang="ts" context="module">
-  import { getDefaultNicheBoostFactor, ModelName, PopularityAttenuationFactor } from './conf';
+  import { getDefaultNicheBoostFactor, ModelName, PopularityAttenuationFactor, ProfileSource } from './conf';
 
   const ALL_MODEL_OPTIONS: { id: ModelName; text: string }[] = [
     { id: ModelName.Model_2026_logq, text: 'Aug. 2026' },
@@ -41,6 +41,8 @@
    * profiles presence-only regardless of the param.
    */
   export let hideLogitWeight = false;
+  export let onForceProfileRefresh: (() => void) | undefined = undefined;
+  export let isProfileRefreshing = false;
 
   // Local state for sliders to prevent updates while dragging
   let localLogitWeight = $params.logitWeight;
@@ -68,6 +70,10 @@
         bind:toggled={$params.includeExtraSeasons}
         on:toggle={(evt) => submitFilterToggle('extra_seasons', evt.detail.toggled)}
       />
+      <span class="toggle-helper">
+        Off hides sequels, prequels, parent stories, and side stories connected to anime you already watched. On
+        allows them.
+      </span>
     </div>
     <div>
       <Toggle
@@ -75,6 +81,7 @@
         bind:toggled={$params.includeMovies}
         on:toggle={(evt) => submitFilterToggle('movies', evt.detail.toggled)}
       />
+      <span class="toggle-helper">Off excludes MAL entries whose media type is Movie. On allows movies.</span>
     </div>
     <div>
       <Toggle
@@ -82,6 +89,7 @@
         bind:toggled={$params.includeONAsOVAsSpecials}
         on:toggle={(evt) => submitFilterToggle('onas_ovas_specials', evt.detail.toggled)}
       />
+      <span class="toggle-helper">Off excludes ONA, OVA, Special, and TV Special entries. On allows them.</span>
     </div>
     <div style="position: relative">
       <Toggle
@@ -89,6 +97,7 @@
         bind:toggled={$params.includeMusic}
         on:toggle={(evt) => submitFilterToggle('music', evt.detail.toggled)}
       />
+      <span class="toggle-helper">Off excludes Music, commercials (CM), and promotional videos (PV). On allows them.</span>
       {#if isLoading && isMobile}
         <div style="position: absolute; right: -4px; bottom: -4px; flex: 0;">
           <InlineLoading />
@@ -99,6 +108,17 @@
       <InlineLoading style="flex: 0; margin-left: 10px;" />
     {/if}
   </div>
+  {#if $params.profileSource === ProfileSource.MyAnimeList && onForceProfileRefresh}
+    <div class="profile-refresh">
+      <button type="button" disabled={isProfileRefreshing || isLoading} on:click={() => onForceProfileRefresh?.()}>
+        {isProfileRefreshing ? 'Refreshing MyAnimeList…' : 'Refresh MyAnimeList data'}
+      </button>
+      <span class="helper-text">
+        MyAnimeList profiles are cached by Sprout for 60 seconds. This button bypasses that cache, fetches the latest
+        list from MAL, and recomputes the recommendations.
+      </span>
+    </div>
+  {/if}
   {#if !isMobile && !forceHideTopBar}
     <ExpandableTile
       style="min-height: 10px"
@@ -135,7 +155,7 @@
                 $params.modelName = model;
               }}
               items={ALL_MODEL_OPTIONS}
-              helperText="Each model was trained slightly differently, which impacts the generated recommendations"
+              helperText="Selects the recommendation model/version. Each model was trained differently, so changing it can change both scores and ranking order."
             />
           </div>
           <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -146,7 +166,7 @@
               bind:toggled={$params.filterPlanToWatch}
               on:toggle={(evt) => submitFilterToggle('plan_to_watch', evt.detail.toggled)}
             />
-            <span class="helper-text">Hide shows that are already marked plan to watch</span>
+            <span class="helper-text">On removes anime already marked Plan to Watch in your profile. Off keeps them eligible and labels them in the results.</span>
           </div>
         </div>
         <div class="bottom-row">
@@ -170,7 +190,7 @@
                   $params.popularityAttenuationFactor = value;
                 }}
                 items={ALL_POPULARITY_ATTENUATION_FACTOR_OPTIONS}
-                helperText="Higher popularity attenuation factors result in less-popular anime being weighted higher in recommendations"
+                helperText="Legacy model only. Higher values increasingly favor less-popular anime; None preserves the legacy model ranking without this adjustment."
               />
             </div>
           {:else}
@@ -196,7 +216,7 @@
                   }}
                 />
                 <span class="helper-text">
-                  Balance between predicted rating (0) and presence probability (1) when scoring recommendations
+                  0 prioritizes your predicted 1–10 rating; 1 prioritizes how strongly the model expects the anime to belong in your profile. Intermediate values blend both signals.
                 </span>
               </div>
             {/if}
@@ -221,7 +241,7 @@
                 }}
               />
               <span class="helper-text">
-                Boosts shows that the model thinks you'll like more than their popularity suggests. Higher = more boost.
+                0 adds no niche boost. Higher values increasingly favor anime the model predicts for you more strongly than their overall popularity would suggest.
               </span>
             </div>
           {/if}
@@ -327,23 +347,64 @@
   .toggles {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     flex: 1;
   }
 
   .toggles > div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
     padding: 8px;
     box-sizing: border-box;
     border-right: 1px solid #cccccc22;
     border-top: 1px solid #cccccc22;
     border-bottom: 1px solid #cccccc22;
-    width: 150px;
+    width: 200px;
+    min-width: 170px;
+  }
+
+  .toggle-helper {
+    font-size: 0.72rem;
+    line-height: 1.25;
+    color: #9ba3ab;
+  }
+
+  .profile-refresh {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .profile-refresh button {
+    border: 1px solid #6f6f6f;
+    background: #2b2b2b;
+    color: #f4f4f4;
+    padding: 7px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .profile-refresh button:hover:not(:disabled) {
+    background: #353535;
+  }
+
+  .profile-refresh button:disabled {
+    cursor: wait;
+    opacity: 0.6;
   }
 
   @media (max-width: 768px) {
     .toggles > div {
-      display: flex;
-      flex: 1;
-      width: unset;
+      flex: 1 1 50%;
+      width: 50%;
+      min-width: 0;
+    }
+
+    .profile-refresh {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 5px;
     }
   }
 
