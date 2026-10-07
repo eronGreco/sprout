@@ -29,8 +29,6 @@
 
   type SortMode =
     | 'model'
-    | 'score-desc'
-    | 'score-asc'
     | 'predicted-desc'
     | 'predicted-asc'
     | 'year-desc'
@@ -181,10 +179,6 @@
         const metadataB = animeMetadataDatabase[b.id];
 
         switch (sortMode) {
-          case 'score-desc':
-            return b.score - a.score || a.modelRank - b.modelRank;
-          case 'score-asc':
-            return a.score - b.score || a.modelRank - b.modelRank;
           case 'predicted-desc':
             if (a.shownPredictedRating === null && b.shownPredictedRating === null) return a.modelRank - b.modelRank;
             if (a.shownPredictedRating === null) return 1;
@@ -242,9 +236,7 @@
   <div class="control">
     <label for="recommendation-sort"><ArrowsVertical size={16} aria-hidden="true" />Sort</label>
     <select id="recommendation-sort" bind:value={sortMode}>
-      <option value="model">Model ranking (default)</option>
-      <option value="score-desc">Model score: high to low</option>
-      <option value="score-asc">Model score: low to high</option>
+      <option value="model">Recommended order (default)</option>
       <option value="predicted-desc" disabled={!hasPredictedRatings}>Predicted rating: high to low</option>
       <option value="predicted-asc" disabled={!hasPredictedRatings}>Predicted rating: low to high</option>
       <option value="year-desc">Year: newest first</option>
@@ -328,8 +320,8 @@
 </div>
 
 <div class="browse-helper">
-  <b>Model ranking</b> is Sprout's original recommendation order, based on the model's combined recommendation score. Predicted
-  rating is the personalized 1–10 estimate shown beside each title. Sort, Genre, Format, Year, and Title organize the
+  <b>Recommended order (default)</b> keeps Sprout's original recommendation order. <b>Predicted rating</b> sorts by the
+  personalized 1–10 estimate shown beside each title. Sort, Genre, Format, Year, and Title organize the
   recommendations already generated. Exclude genres requests new recommendations without the checked genres. The current
   metadata exposes MAL genres, format, year, and titles; it does not expose a separate free-form tag taxonomy.
 </div>
