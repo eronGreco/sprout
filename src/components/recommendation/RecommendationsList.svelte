@@ -8,7 +8,6 @@
   import { getRatingTier, type RatingTier } from 'src/util/ratingTiers';
   import RecommendationListItem from './RecommendationListItem.svelte';
   import Filter from 'carbon-icons-svelte/lib/Filter.svelte';
-  import Search from 'carbon-icons-svelte/lib/Search.svelte';
   import Calendar from 'carbon-icons-svelte/lib/Calendar.svelte';
   import ArrowsVertical from 'carbon-icons-svelte/lib/ArrowsVertical.svelte';
   import Video from 'carbon-icons-svelte/lib/Video.svelte';
@@ -53,7 +52,6 @@
   let mediaTypeFilter = '';
   let yearFrom: number | undefined = undefined;
   let yearTo: number | undefined = undefined;
-  let titleFilter = '';
 
   // Drop contributors dwarfed by the rec's top one or below the profile-wide
   // significance scale; always keep at least the top contributor.
@@ -121,7 +119,6 @@
   $: {
     const minYear = parseYearFilter(yearFrom);
     const maxYear = parseYearFilter(yearTo);
-    const titleNeedle = titleFilter.trim().toLocaleLowerCase();
 
     displayRecommendations = recommendations
       .map((reco, modelRank) => {
@@ -155,21 +152,6 @@
         }
         if (maxYear !== null && year !== null && year > maxYear) {
           return false;
-        }
-
-        if (titleNeedle) {
-          const searchableTitles = [
-            metadata.title,
-            metadata.alternative_titles?.en,
-            metadata.alternative_titles?.ja,
-            ...(metadata.alternative_titles?.synonyms ?? []),
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLocaleLowerCase();
-          if (!searchableTitles.includes(titleNeedle)) {
-            return false;
-          }
         }
 
         return true;
@@ -213,7 +195,6 @@
     mediaTypeFilter = '';
     yearFrom = undefined;
     yearTo = undefined;
-    titleFilter = '';
     [...excludedGenreIDs].forEach((id) => includeGenre?.(id));
   };
 
@@ -222,7 +203,6 @@
     !!mediaTypeFilter ||
     yearFrom !== undefined ||
     yearTo !== undefined ||
-    !!titleFilter ||
     excludedGenreIDs.length > 0;
 
   let expandedAnimeID: number | null = null;
@@ -284,11 +264,6 @@
     </div>
   </div>
 
-  <div class="control search-control">
-    <label for="title-filter"><Search size={16} aria-hidden="true" />Title</label>
-    <input id="title-filter" type="search" placeholder="Filter titles" bind:value={titleFilter} />
-  </div>
-
   <div class="control-actions">
     <span role="status">{displayRecommendations.length} of {recommendations.length}</span>
     <button type="button" on:click={clearDisplayFilters} disabled={!displayFiltersActive}>Clear filters</button>
@@ -321,7 +296,7 @@
 
 <div class="browse-helper">
   <b>Recommended order (default)</b> keeps Sprout's original recommendation order. <b>Predicted rating</b> sorts by the
-  personalized 1–10 estimate shown beside each title. Sort, Genre, Format, Year, and Title organize the
+  personalized 1–10 estimate shown beside each title. Sort and the Genre, Format, and Year filters organize the
   recommendations already generated. Exclude genres requests new recommendations without the checked genres. The current
   metadata exposes MAL genres, format, year, and titles; it does not expose a separate free-form tag taxonomy.
 </div>
