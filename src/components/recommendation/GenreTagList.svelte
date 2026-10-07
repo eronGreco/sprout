@@ -26,13 +26,14 @@
     }
 
     const availHeight = containerElem.clientHeight;
+    const measureRect = measureElem.getBoundingClientRect();
     const children = Array.from(measureElem.children) as HTMLElement[];
     const chipCopy = children[children.length - 1];
     const tagEls = children.slice(0, -1);
 
     let fits = 0;
     for (const el of tagEls) {
-      if (el.offsetTop + el.offsetHeight > availHeight) {
+      if (el.getBoundingClientRect().bottom - measureRect.top > availHeight) {
         break;
       }
       fits += 1;
@@ -47,10 +48,16 @@
       return;
     }
 
-    const lastVisible = tagEls[fits - 1];
-    const chipFitsOnRow =
-      lastVisible.offsetLeft + lastVisible.offsetWidth + TAG_GAP + chipCopy.offsetWidth <= measureElem.clientWidth;
-    visibleCount = chipFitsOnRow ? fits : fits - 1;
+    // Preserve fractional pixels: rounded offset sizes can put the +N chip on a
+    // clipped second row even when the calculation says it fits.
+    const chipWidth = chipCopy.getBoundingClientRect().width;
+    while (
+      fits > 0 &&
+      tagEls[fits - 1].getBoundingClientRect().right - measureRect.left + TAG_GAP + chipWidth > measureRect.width
+    ) {
+      fits -= 1;
+    }
+    visibleCount = fits;
   };
 
   onMount(() => {
@@ -153,7 +160,7 @@
   }
 
   .genre-label {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 5px;
   }
@@ -184,7 +191,7 @@
     height: 18px;
     padding: 0 8px;
     cursor: pointer;
-    align-self: center;
+    align-self: flex-start;
   }
 
   .overflow-chip:hover {

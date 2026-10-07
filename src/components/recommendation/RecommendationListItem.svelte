@@ -11,6 +11,7 @@
   import GenreIcon from './GenreIcon.svelte';
   import HelpTip from './HelpTip.svelte';
   import Image from 'carbon-icons-svelte/lib/Image.svelte';
+  import Launch from 'carbon-icons-svelte/lib/Launch.svelte';
 
   export let animeMetadata: AnimeDetails;
   export let rank: number;
@@ -74,13 +75,6 @@
   ]
     .filter(Boolean)
     .join(' · ');
-
-  let synopsisElem: HTMLDivElement | null = null;
-  $: {
-    if (synopsisElem && !expanded) {
-      synopsisElem.scrollTop = 0;
-    }
-  }
 </script>
 
 <div
@@ -107,29 +101,32 @@
     {/if}
   </button>
   <div class="card-content">
-    <div class="title-text">
-      {#if expanded}
-        <a
-          target="_blank"
-          href={`https://myanimelist.net/anime/${animeMetadata.id}`}
-          on:click={() =>
-            submitAnalyticsEvent({
-              category: 'recommendations',
-              subcategory: 'mal_link_click',
-              payload: { anime_id: animeMetadata.id, rank, plan_to_watch: planToWatch, surface: getSurface() },
-            })}>{animeMetadata.alternative_titles.en || animeMetadata.title}</a
-        >
-      {:else}
-        <button type="button" class="title-button" on:click={toggleExpanded}
+    <div class="title-row">
+      <div class="title-text">
+        <button type="button" class="title-button" aria-expanded={expanded} on:click={toggleExpanded}
           >{animeMetadata.alternative_titles.en || animeMetadata.title}</button
         >
-      {/if}
+      </div>
+      <a
+        class="external-link"
+        target="_blank"
+        rel="noopener noreferrer"
+        href={`https://myanimelist.net/anime/${animeMetadata.id}`}
+        aria-label={`Open ${animeMetadata.alternative_titles.en || animeMetadata.title} on MyAnimeList (opens in a new tab)`}
+        title="Open on MyAnimeList (new tab)"
+        on:click={() =>
+          submitAnalyticsEvent({
+            category: 'recommendations',
+            subcategory: 'mal_link_click',
+            payload: { anime_id: animeMetadata.id, rank, plan_to_watch: planToWatch, surface: getSurface() },
+          })}><Launch size={16} aria-hidden="true" /></a
+      >
     </div>
     <div class="metadata-row">
       {#if predictedRating !== null}
         <span class="predicted-line" data-tier={ratingTier ?? 'neutral'}
           ><span class="predicted-value">{predictedRating.toFixed(1)}</span><span class="predicted-text"
-            >predicted{expanded ? ' for you' : ''}</span
+            >predicted for you</span
           ></span
         >
       {/if}
@@ -149,7 +146,7 @@
       </div>
       {#if planToWatch}
         <Tag style="color: white" type="green" size="sm">Plan To Watch</Tag>
-      {:else if addRanking && !expanded}
+      {:else if addRanking}
         <Tag
           style="color: white"
           type="outline"
@@ -167,16 +164,7 @@
       {/if}
     </div>
   </div>
-  <button
-    type="button"
-    class="expander"
-    aria-label={expanded ? 'Collapse anime details' : 'Expand anime details'}
-    aria-expanded={expanded}
-    on:click={toggleExpanded}
-  >
-    {#if expanded}<ChevronUp size={20} aria-hidden="true" />{:else}<ChevronDown size={20} aria-hidden="true" />{/if}
-  </button>
-  <div class="synopsis" bind:this={synopsisElem}>{animeMetadata.synopsis || 'No synopsis available.'}</div>
+  <div class="synopsis">{animeMetadata.synopsis || 'No synopsis available.'}</div>
   {#if expanded}
     <div class="details">
       <div class="top-influences">
@@ -250,6 +238,16 @@
       </div>
     </div>
   {/if}
+  <button
+    type="button"
+    class="expander"
+    aria-label={expanded ? 'Show fewer details' : 'Show full synopsis and recommendation reasons'}
+    aria-expanded={expanded}
+    on:click={toggleExpanded}
+  >
+    <span>{expanded ? 'Less details' : 'More details'}</span>
+    {#if expanded}<ChevronUp size={16} aria-hidden="true" />{:else}<ChevronDown size={16} aria-hidden="true" />{/if}
+  </button>
 </div>
 
 <style lang="css">
@@ -261,6 +259,8 @@
     align-items: start;
     min-width: 0;
     overflow: hidden;
+    grid-template-areas: 'thumbnail content' 'synopsis synopsis' 'details details' 'expander expander';
+    grid-template-columns: 80px minmax(0, 1fr);
   }
   .recommendation:hover {
     border-color: #88b69755;
@@ -268,21 +268,11 @@
   .recommendation[data-plan-to-watch='true'] {
     background: #1d2a20;
   }
-  .recommendation[data-expanded='false'] {
-    grid-template-areas: 'thumbnail content synopsis expander';
-    grid-template-columns: 96px minmax(0, 1.1fr) minmax(0, 1fr) 40px;
-    min-height: 144px;
-  }
-  .recommendation[data-expanded='true'] {
-    grid-template-areas: 'thumbnail content expander' 'thumbnail synopsis synopsis' 'details details details';
-    grid-template-columns: 180px minmax(0, 1fr) 40px;
-    grid-template-rows: auto 1fr auto;
-  }
   .poster {
     grid-area: thumbnail;
     position: relative;
-    align-self: stretch;
-    min-height: 144px;
+    align-self: start;
+    height: 120px;
     padding: 0;
     border: 0;
     background: #202823;
@@ -306,9 +296,6 @@
     color: #7e9487;
     font-size: 10px;
   }
-  .recommendation[data-expanded='true'] .poster {
-    min-height: 240px;
-  }
   .card-content {
     grid-area: content;
     padding: 16px;
@@ -319,13 +306,22 @@
     min-width: 0;
     width: 100%;
     box-sizing: border-box;
+    min-height: 120px;
+  }
+  .title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
   }
   .title-text {
     font-size: 15px;
     line-height: 1.4;
     font-weight: 600;
     overflow-wrap: anywhere;
-    width: 100%;
+    min-width: 0;
+    flex: 0 1 auto;
   }
   .title-button {
     display: -webkit-box;
@@ -344,15 +340,28 @@
   .title-button:hover {
     color: #98e4a3;
   }
-  .recommendation[data-expanded='true'] .title-text {
-    font-size: 19px;
+  .recommendation[data-expanded='true'] .title-button {
+    display: block;
+    overflow: visible;
   }
-  .title-text a {
-    color: #b9dcc5;
-    text-decoration: none;
+  .external-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    margin-top: -3px;
+    margin-bottom: -3px;
+    border: 1px solid #ffffff20;
+    border-radius: 6px;
+    color: #abc6b5;
+    background: #ffffff04;
   }
-  .title-text a:hover {
-    text-decoration: underline;
+  .external-link:hover {
+    color: #98e4a3;
+    border-color: #78d88670;
+    background: #78d88615;
   }
   .metadata-row {
     display: flex;
@@ -416,9 +425,14 @@
     gap: 4px;
   }
   .genre-label {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 5px;
+  }
+  .genres :global(.bx--tag) {
+    background: #29302d;
+    border: 1px solid #ffffff12;
+    color: #d5ded8;
   }
   .synopsis {
     grid-area: synopsis;
@@ -427,34 +441,34 @@
     font-size: 13px;
     line-height: 1.55;
     color: #adbbb2;
-    margin: 16px 12px 16px 0;
+    margin: 12px 16px;
     text-align: left;
     white-space: pre-line;
   }
   .recommendation[data-expanded='false'] .synopsis {
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 5;
-    line-clamp: 5;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     overflow: hidden;
   }
   .recommendation[data-expanded='true'] .synopsis {
-    margin: 0 16px 16px;
-    max-height: 260px;
-    overflow-y: auto;
     color: #c9d5cd;
   }
   .expander {
     grid-area: expander;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    gap: 6px;
     min-height: 40px;
-    width: 40px;
+    width: 100%;
+    padding: 8px 16px;
     border: 0;
-    border-radius: 0 8px 0 8px;
+    border-top: 1px solid #ffffff14;
     background: #ffffff04;
     color: #a4b8ac;
+    font-size: 12px;
     cursor: pointer;
   }
   .expander:hover {
@@ -604,24 +618,6 @@
   }
 
   @media (max-width: 800px) {
-    .recommendation[data-expanded='false'] {
-      grid-template-areas: 'thumbnail content expander';
-      grid-template-columns: 90px minmax(0, 1fr) 40px;
-    }
-    .recommendation[data-expanded='false'] .synopsis {
-      display: none;
-    }
-    .recommendation[data-expanded='true'] {
-      grid-template-areas: 'thumbnail content expander' 'synopsis synopsis synopsis' 'details details details';
-      grid-template-columns: 120px minmax(0, 1fr) 40px;
-      grid-template-rows: auto auto auto;
-    }
-    .recommendation[data-expanded='true'] .poster {
-      min-height: 180px;
-    }
-    .recommendation[data-expanded='true'] .synopsis {
-      margin: 16px;
-    }
     .influence-pills {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -632,25 +628,25 @@
     }
   }
   @media (max-width: 480px) {
-    .recommendation[data-expanded='false'],
-    .recommendation[data-expanded='true'] {
-      grid-template-columns: 72px minmax(0, 1fr) 32px;
+    .recommendation {
+      grid-template-columns: 72px minmax(0, 1fr);
+    }
+    .poster {
+      height: 108px;
     }
     .card-content {
       padding: 12px 10px;
       gap: 8px;
+      min-height: 108px;
     }
     .expander {
-      width: 32px;
+      padding-left: 12px;
     }
     .title-text {
       font-size: 14px;
     }
-    .recommendation[data-expanded='true'] .title-text {
-      font-size: 16px;
-    }
-    .recommendation[data-expanded='true'] .poster {
-      min-height: 160px;
+    .synopsis {
+      margin: 12px;
     }
     .metadata-row {
       gap: 5px;

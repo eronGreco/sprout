@@ -23,12 +23,21 @@
       alternative_titles: { synonyms: ['Shadow of the Stars'], en: 'Shadow of the Stars', ja: '星の影' },
       start_date: '2026-04-10',
       end_date: '2026-06-26',
-      synopsis: 'A quiet science-fiction drama about a survey team following a mysterious signal beyond the Moon.',
+      synopsis: `For twelve years, the observatory on the far side of the Moon has listened to a signal that arrives every evening at precisely the same time. Most researchers dismiss it as an equipment fault. Junior navigator Mina notices that each transmission describes a place that no longer exists on Earth—and that the voice behind it sounds like her missing brother.
+
+When the signal suddenly changes, Mina joins a survey crew aboard a retired transport ship. Their mission is supposed to last six days: reach an abandoned relay station, replace its recorder, and return before the next supply window closes. Instead, they discover a collection of messages addressed to people who have not yet been born. Some predict small, ordinary events. Others warn of a disaster the crew can no longer ignore.
+
+The captain wants to report the discovery and turn back. The engineer believes the station is a trap. Mina is certain that someone is waiting for them beyond the permitted navigation zone, but following the voice means risking the only ship that can bring everyone home. As old friendships break under the pressure, the crew must decide whose memories they can trust.
+
+Far from the cities and families they left behind, these reluctant explorers begin to uncover why the observatory was built, why its original team disappeared, and why the same message has been travelling through the dark for twelve years. Their answers may change the way humanity remembers its first journey into space.`,
       media_type: AnimeMediaType.TV,
       num_episodes: 12,
       genres: [
         { id: 1, name: 'Sci-Fi' },
         { id: 2, name: 'Drama' },
+        { id: 3, name: 'Mystery' },
+        { id: 8, name: 'Fantasy' },
+        { id: 4, name: 'Action' },
       ],
     },
     102: {
@@ -53,7 +62,9 @@
       alternative_titles: { synonyms: ['NC'], en: 'Neon Courier', ja: 'ネオンクーリエ' },
       start_date: '2025-01-08',
       end_date: '2025-03-26',
-      synopsis: 'A bike courier crosses a dense cyberpunk city while trying to keep one impossible package alive.',
+      synopsis: `A bike courier crosses a dense cyberpunk city while trying to keep one impossible package alive. Ren usually delivers spare parts and late dinners, keeping his head down whenever the city patrols pass. A stranger's offer of a month's wages for a single trip seems like the chance to finally leave his debt behind.
+
+But the package speaks, the delivery address was demolished years ago, and someone has locked every bridge out of the district. With help from an old racing rival and a mechanic who refuses to answer questions, Ren follows a trail through crowded markets and abandoned transit tunnels. Before sunrise, he must choose between completing the delivery and protecting the person who has become its unexpected passenger.`,
       media_type: AnimeMediaType.TV,
       num_episodes: 12,
       genres: [
