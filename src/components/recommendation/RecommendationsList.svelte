@@ -43,8 +43,8 @@
   let sortMode: SortMode = 'model';
   let genreFilter = '';
   let mediaTypeFilter = '';
-  let yearFrom = '';
-  let yearTo = '';
+  let yearFrom: number | undefined = undefined;
+  let yearTo: number | undefined = undefined;
   let titleFilter = '';
 
   // Drop contributors dwarfed by the rec's top one or below the profile-wide
@@ -66,12 +66,11 @@
     const year = Number(datum.start_date?.slice(0, 4));
     return Number.isFinite(year) && year > 0 ? year : null;
   };
-  const parseYearFilter = (raw: string): number | null => {
-    if (!raw.trim()) {
+  const parseYearFilter = (raw: number | undefined): number | null => {
+    if (raw === undefined || raw === null) {
       return null;
     }
-    const year = Number(raw);
-    return Number.isFinite(year) ? year : null;
+    return Number.isFinite(raw) ? raw : null;
   };
 
   $: hasPredictedRatings =
@@ -198,12 +197,13 @@
   const clearDisplayFilters = () => {
     genreFilter = '';
     mediaTypeFilter = '';
-    yearFrom = '';
-    yearTo = '';
+    yearFrom = undefined;
+    yearTo = undefined;
     titleFilter = '';
   };
 
-  $: displayFiltersActive = !!genreFilter || !!mediaTypeFilter || !!yearFrom || !!yearTo || !!titleFilter;
+  $: displayFiltersActive =
+    !!genreFilter || !!mediaTypeFilter || yearFrom !== undefined || yearTo !== undefined || !!titleFilter;
 
   let expandedAnimeID: number | null = null;
   $: if (expandedAnimeID !== null && !displayRecommendations.some((reco) => reco.id === expandedAnimeID)) {
@@ -227,7 +227,7 @@
   </div>
 
   <div class="control">
-    <label for="genre-filter">Genre / tag</label>
+    <label for="genre-filter">Genre</label>
     <select id="genre-filter" bind:value={genreFilter}>
       <option value="">All genres</option>
       {#each availableGenres as genre}
@@ -269,7 +269,8 @@
 <div class="browse-helper">
   <b>Model ranking</b> is Sprout's original recommendation order, based on the model's combined recommendation score.
   Predicted rating is the personalized 1–10 estimate shown beside each title. These controls only sort or filter the
-  recommendations already generated; they do not change the model itself.
+  recommendations already generated; they do not change the model itself. The current recommendation metadata exposes
+  MAL genres, format, year, and titles; it does not expose a separate free-form tag taxonomy.
 </div>
 
 <div class="recommendations">

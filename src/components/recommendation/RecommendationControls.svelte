@@ -72,8 +72,9 @@
         on:toggle={(evt) => submitFilterToggle('extra_seasons', evt.detail.toggled)}
       />
       <span class="toggle-helper">
-        Off hides sequels, prequels, parent stories, and side stories connected to anime you already watched. On
-        allows them.
+        Off hides TV/unknown recommendations connected through sequel, prequel, parent-story, or side-story
+        relationships to anime you already watched. Other formats are controlled by their own toggles. On allows these
+        extra seasons/stories.
       </span>
     </div>
     <div>
@@ -167,7 +168,7 @@
                 $params.modelName = model;
               }}
               items={ALL_MODEL_OPTIONS}
-              helperText="Selects the recommendation model/version. Each model was trained differently, so changing it can change both scores and ranking order."
+              helperText="Chooses the trained recommendation version. Aug. 2026 is the current default, v2 is experimental, Dec. 2025 is the previous model, and Legacy uses the older 2023 serving path. Changing model can change scores and ranking order."
             />
           </div>
           <!-- svelte-ignore a11y-click-events-have-key-events -->
