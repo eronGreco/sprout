@@ -21,7 +21,7 @@ export const fetchUserRankings = tryCatchK(
     let profile: CompatAnimeListEntry[] = [];
     switch (profileSource) {
       case ProfileSource.MyAnimeList:
-        profile = await getUserMALAnimeList(username, forceProfileRefresh);
+        profile = await getUserMALAnimeList(username, forceProfileRefresh === true);
         break;
       case ProfileSource.AniList: {
         const res = await getAnilistUserAnimeList(username);
