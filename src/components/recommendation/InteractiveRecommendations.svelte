@@ -91,28 +91,20 @@
     profileRefreshError = '';
     try {
       const availableAnimeMetadataIDs = Object.keys($animeMetadataDatabase).map((x) => +x);
+      // A single contributor-enabled request returns the complete recommendation payload while
+      // forcing the MAL profile fetch. Reuse that result for both query caches so the refresh is
+      // atomic and cannot race a second request that still has the old profile cached.
       const freshRecommendations = await fetchRecommendations(
         username,
         $params,
         availableAnimeMetadataIDs,
-        false,
+        true,
         true
       );
       updateAnimeDB(freshRecommendations.animeData);
       lastRecosRes = freshRecommendations;
       queryClient.setQueryData(['recommendations', username, $params], freshRecommendations);
-
-      // Contributions are a second recommendation query. Refresh them only after the forced MAL
-      // fetch completes so they reuse the newly cached profile instead of racing the refresh.
-      const freshContributors = await fetchRecommendations(
-        username,
-        $params,
-        Object.keys($animeMetadataDatabase).map((x) => +x),
-        true,
-        false
-      );
-      updateAnimeDB(freshContributors.animeData);
-      queryClient.setQueryData(['recommendations_contributors', username, $params], freshContributors);
+      queryClient.setQueryData(['recommendations_contributors', username, $params], freshRecommendations);
 
       submitAnalyticsEvent({
         category: 'recommendations',
