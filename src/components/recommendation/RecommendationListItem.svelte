@@ -8,13 +8,13 @@
   import type { AnimeDetails } from 'src/malAPI';
   import type { RatingTier } from 'src/util/ratingTiers';
   import GenreTagList from './GenreTagList.svelte';
+  import GenreIcon from './GenreIcon.svelte';
 
   export let animeMetadata: AnimeDetails;
   export let rank: number;
   export let expanded: boolean;
   export let toggleExpanded: () => void;
   export let excludeRanking: ((animeID: number) => void) | undefined;
-  export let excludeGenre: ((genreID: number, genreName: string) => void) | undefined;
   export let addRanking: ((animeID: number) => void) | undefined;
   export let topContributors:
     | {
@@ -151,18 +151,16 @@
       </div>
     {/if}
   </div>
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
-  <div class="expander" on:click={toggleExpanded}>
+  <button type="button" class="expander" aria-label={expanded ? 'Collapse anime details' : 'Expand anime details'} on:click={toggleExpanded}>
     {#if expanded}
-      <ChevronUp size={24} aria-label="Expand anime details" />
+      <ChevronUp size={24} />
     {:else}
-      <ChevronDown size={24} aria-label="Collapse anime details" />
+      <ChevronDown size={24} />
     {/if}
-  </div>
+  </button>
   {#if !expanded}
     <div class="genres">
-      <GenreTagList genres={animeMetadata.genres ?? []} {excludeGenre} />
+      <GenreTagList genres={animeMetadata.genres ?? []} />
     </div>
   {/if}
   {#if expanded}
@@ -182,10 +180,8 @@
           <Tag
             size="sm"
             type="cool-gray"
-            filter={!!excludeGenre}
-            on:close={() => excludeGenre?.(genre.id, genre.name)}
           >
-            {genre.name}
+            <span class="genre-label"><GenreIcon name={genre.name} />{genre.name}</span>
           </Tag>
         {/each}
       </div>
@@ -254,8 +250,19 @@
             {/if}
           {/each}
           </div>
-        {:else}
+        {:else if contributorsLoading}
           <div class="influence-pills"><Tag skeleton /><Tag skeleton /><Tag skeleton /></div>
+        {:else}
+          <span class="influence-help">No contributor details are available for this recommendation.</span>
+        {/if}
+        {#if topContributors?.length}
+          <p class="influence-help">
+            Longer bars mean a stronger contribution to this recommendation's model score. Each recommendation uses
+            its own bar scale. Brighter green indicates a stronger signal
+            {contributionBaseline !== undefined && contributionBaseline > 0 ? 'relative to your profile' : 'among the titles shown'}.
+            These bars are not ratings or probabilities.
+            {#if excludeRanking}Use × to recalculate without that watched title.{/if}
+          </p>
         {/if}
       </div>
     </div>
@@ -266,12 +273,25 @@
   .recommendation {
     display: grid;
     grid-gap: 0;
-    border-bottom: 1px solid #ccc;
+    border: 1px solid #ffffff16;
+    border-radius: 8px;
+    background: #191d1b;
     max-height: 120px;
 
     overflow: hidden;
     align-items: center;
     grid-template-areas: 'thumbnail title genres synopsis expander';
+  }
+
+  .recommendation:hover {
+    border-color: #6c92784d;
+    background: #1c211e;
+  }
+
+  .genre-label {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
   }
 
   .recommendation[data-plan-to-watch='true'] {
@@ -280,12 +300,12 @@
 
   .recommendation[data-expanded='false'] {
     height: 120px;
-    grid-template-columns: 87px 140px 190px 1fr 60px;
+    grid-template-columns: 87px minmax(130px, 0.9fr) minmax(150px, 1fr) minmax(0, 2fr) 42px;
   }
 
   .recommendation[data-expanded='false'][data-show-rating='true'] {
     grid-template-areas: 'thumbnail rating title genres synopsis expander';
-    grid-template-columns: 87px 64px 140px 190px 1fr 60px;
+    grid-template-columns: 87px 64px minmax(130px, 0.9fr) minmax(150px, 1fr) minmax(0, 2fr) 42px;
   }
 
   .recommendation[data-expanded='true'] {
@@ -297,7 +317,7 @@
       'thumbnail synopsis synopsis'
       'details details details';
     grid-template-columns: 225px 1fr 60px;
-    grid-template-rows: 28px auto auto auto;
+    grid-template-rows: minmax(40px, auto) auto auto auto;
   }
 
   @media (max-width: 768px) {
@@ -381,8 +401,8 @@
     grid-area: title;
     height: 100%;
     justify-content: center;
-    text-align: center;
-    padding: 0 5px;
+    text-align: left;
+    padding: 0 10px;
     min-width: 0;
   }
 
@@ -398,7 +418,7 @@
   .recommendation[data-expanded='false'] .title .title-text {
     display: flex;
     flex: 1;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     overflow: hidden;
   }
@@ -443,10 +463,17 @@
     padding: 5px 0;
     cursor: pointer;
     background-color: #202428;
+    border: 0;
+    color: inherit;
   }
 
   .recommendation .expander:hover {
     background-color: #24282b;
+  }
+
+  .recommendation .expander:focus-visible {
+    outline: 2px solid #78a9ff;
+    outline-offset: -2px;
   }
 
   .recommendation[data-expanded='true'] .expander {
@@ -556,6 +583,8 @@
     padding: 2px 0px;
     grid-area: synopsis;
     white-space: pre-line;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .recommendation[data-expanded='false'] .synopsis {
@@ -587,7 +616,7 @@
     border-top: 1px solid #cccccc44;
     height: 100%;
     gap: 10px;
-    padding: 4px;
+    padding: 10px;
     box-sizing: border-box;
   }
 
@@ -598,6 +627,7 @@
     min-width: 0;
     min-height: 30px;
     align-items: center;
+    flex-wrap: wrap;
   }
 
   .top-influences h3 {
@@ -606,6 +636,14 @@
     font-weight: 500;
     color: #ddd;
     margin-right: 8px;
+  }
+
+  .influence-help {
+    flex-basis: 100%;
+    margin: 4px 4px 2px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #a8b0b8;
   }
 
   .influence-pills {
@@ -718,6 +756,11 @@
     .top-influences {
       flex-direction: column;
       align-items: stretch;
+      flex-wrap: nowrap;
+    }
+
+    .influence-help {
+      flex-basis: auto;
     }
 
     .top-influences h3 {
@@ -732,6 +775,45 @@
       left: 0;
       right: auto;
       transform: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .recommendation[data-expanded='false'] {
+      grid-template-areas:
+        'thumbnail title expander'
+        'thumbnail genres expander';
+      grid-template-columns: 70px minmax(0, 1fr) 32px;
+      grid-template-rows: 80px 40px;
+    }
+
+    .recommendation[data-expanded='false'][data-show-rating='true'] {
+      grid-template-areas:
+        'thumbnail rating title expander'
+        'thumbnail genres genres expander';
+      grid-template-columns: 70px 44px minmax(0, 1fr) 32px;
+    }
+
+    .recommendation[data-expanded='false'] img {
+      min-width: 70px;
+      width: 70px;
+    }
+
+    .recommendation[data-expanded='false'] .genres {
+      height: 40px;
+    }
+
+    .recommendation[data-expanded='true'] {
+      grid-template-columns: 100px minmax(0, 1fr) 32px;
+      grid-template-rows: auto auto auto auto;
+    }
+
+    .recommendation[data-expanded='true'] img {
+      max-width: 100px;
+    }
+
+    .meta-line {
+      white-space: normal;
     }
   }
 </style>

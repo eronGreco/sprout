@@ -4,12 +4,15 @@
   import RecommendationControls from 'src/components/recommendation/RecommendationControls.svelte';
   import RecommendationsList from 'src/components/recommendation/RecommendationsList.svelte';
   import { getDefaultRecommendationControlParams } from 'src/components/recommendation/utils';
-  import { AnimeMediaType, type AnimeDetails } from 'src/malAPI';
+  import { AnimeMediaType } from 'src/animeMediaType';
+  import type { AnimeDetails } from 'src/malAPI';
+  import { ModelName } from 'src/components/recommendation/conf';
   import type { Recommendation, UserRatingStats } from 'src/routes/recommendation/recommendation/recommendation';
 
   const params = writable(getDefaultRecommendationControlParams());
 
-  const poster = (seed: number) => `https://picsum.photos/seed/sprout-${seed}/225/320`;
+  const poster = (seed: number) =>
+    `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="225" height="320"><rect width="225" height="320" fill="hsl(${(seed * 37) % 360},35%,25%)"/><text x="112" y="170" text-anchor="middle" fill="white" font-size="24">Sprout ${seed}</text></svg>`)}`;
 
   const animeMetadataDatabase: { [animeID: number]: AnimeDetails } = {
     101: {
@@ -131,7 +134,7 @@
     },
   };
 
-  const recommendations: Recommendation[] = [
+  const sampleRecommendations: Recommendation[] = [
     { id: 101, score: 0.83, predictedRating: 8.4 },
     { id: 102, score: 0.79, predictedRating: 8.9 },
     { id: 103, score: 0.77, predictedRating: 7.8, planToWatch: true },
@@ -141,6 +144,28 @@
     { id: 107, score: 0.61, predictedRating: 8.1 },
     { id: 108, score: 0.57, predictedRating: 7.5 },
   ];
+
+  // Sample 107 represents a TV story related to a watched title. Model sliders are
+  // deliberately not simulated: their scores require the real model server.
+  $: recommendations = sampleRecommendations
+    .filter((reco) => {
+      const metadata = animeMetadataDatabase[reco.id];
+      if (!$params.includeExtraSeasons && reco.id === 107) return false;
+      if (!$params.includeMovies && metadata.media_type === AnimeMediaType.Movie) return false;
+      if (!$params.includeONAsOVAsSpecials && [AnimeMediaType.ONA, AnimeMediaType.OVA].includes(metadata.media_type))
+        return false;
+      if (!$params.includeMusic && metadata.media_type === AnimeMediaType.Music) return false;
+      if ($params.filterPlanToWatch && reco.planToWatch) return false;
+      return !metadata.genres?.some((genre) => $params.excludedGenreIDs.includes(genre.id));
+    })
+    .map((reco) => ({
+      ...reco,
+      predictedRating: $params.modelName === ModelName.Legacy_2023 ? undefined : reco.predictedRating,
+      topContributors: [
+        { animeId: 101, strength: 0.8 },
+        { animeId: 104, strength: 0.4 },
+      ].filter((contributor) => !$params.excludedRankingAnimeIDs.includes(contributor.animeId)),
+    }));
 
   const userRatingStats: UserRatingStats = {
     mean: 7.2,
@@ -170,6 +195,17 @@
     await new Promise((resolve) => setTimeout(resolve, 900));
     isProfileRefreshing = false;
   };
+
+  const excludeRanking = (animeID: number) => {
+    $params.excludedRankingAnimeIDs = [...new Set([...$params.excludedRankingAnimeIDs, animeID])];
+  };
+  const excludeGenre = (genreID: number) => {
+    $params.excludedGenreIDs = [...new Set([...$params.excludedGenreIDs, genreID])];
+  };
+
+  const includeGenre = (genreID: number) => {
+    $params.excludedGenreIDs = $params.excludedGenreIDs.filter((id) => id !== genreID);
+  };
 </script>
 
 <svelte:head>
@@ -179,14 +215,16 @@
 <div class="preview-shell">
   <div class="preview-note">
     <strong>Development preview</strong>
-    <span>Uses local sample data only. No MyAnimeList or model-server request is made on this page.</span>
+    <span
+      >Uses local sample data only. Toggles filter the samples; refresh simulates loading. Model settings do not
+      recompute sample scores. No MyAnimeList or model-server request is made.</span
+    >
   </div>
 
   <RecommendationControls
     {params}
     {animeMetadataDatabase}
     isLoading={false}
-    {genresDB}
     onForceProfileRefresh={previewRefresh}
     {isProfileRefreshing}
     {profileRefreshError}
@@ -197,6 +235,11 @@
     {animeMetadataDatabase}
     contributorsLoading={false}
     {userRatingStats}
+    {excludeRanking}
+    {excludeGenre}
+    {includeGenre}
+    excludedGenreIDs={$params.excludedGenreIDs}
+    genreNames={$genresDB}
   />
 </div>
 

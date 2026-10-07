@@ -1,4 +1,6 @@
 import * as fs from 'fs';
+import { AnimeMediaType } from './animeMediaType';
+export { AnimeMediaType } from './animeMediaType';
 
 import { DATA_DIR, MAL_API_BASE_URL, MAL_CLIENT_ID } from './conf';
 import { delay } from './util';
@@ -79,19 +81,6 @@ export interface MALUserAnimeListItem {
 export interface MALUserAnimeListResponse {
   data: MALUserAnimeListItem[];
   paging: { next?: string | null };
-}
-
-export enum AnimeMediaType {
-  Unknown = 'unknown',
-  TV = 'tv',
-  TVSpecial = 'tv_special',
-  OVA = 'ova',
-  Movie = 'movie',
-  Special = 'special',
-  ONA = 'ona',
-  Music = 'music',
-  CM = 'cm',
-  PV = 'pv',
 }
 
 const KnownMediaTypes: Set<string> = new Set(Object.values(AnimeMediaType));
@@ -423,7 +412,7 @@ const loadLocalMetadataDump = (): Map<number, AnimeDetails> | null => {
       }
       try {
         map.set(+row[0], JSON.parse(row[1]));
-      } catch (_err) {
+      } catch {
         // skip malformed rows
       }
     }

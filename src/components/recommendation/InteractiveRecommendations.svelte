@@ -90,26 +90,34 @@
     isProfileRefreshing = true;
     profileRefreshError = '';
     try {
+      // Controls can change while MAL is loading. Keep the response associated
+      // with the exact settings that requested it, and cancel older cache work.
+      const refreshParams = structuredClone($params);
+      const recommendationsKey = ['recommendations', username, refreshParams];
+      const contributorsKey = ['recommendations_contributors', username, refreshParams];
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: recommendationsKey, exact: true }),
+        queryClient.cancelQueries({ queryKey: contributorsKey, exact: true }),
+      ]);
       const availableAnimeMetadataIDs = Object.keys($animeMetadataDatabase).map((x) => +x);
       // A single contributor-enabled request returns the complete recommendation payload while
       // forcing the MAL profile fetch. Reuse that result for both query caches so the refresh is
       // atomic and cannot race a second request that still has the old profile cached.
       const freshRecommendations = await fetchRecommendations(
         username,
-        $params,
+        refreshParams,
         availableAnimeMetadataIDs,
         true,
         true
       );
       updateAnimeDB(freshRecommendations.animeData);
-      lastRecosRes = freshRecommendations;
-      queryClient.setQueryData(['recommendations', username, $params], freshRecommendations);
-      queryClient.setQueryData(['recommendations_contributors', username, $params], freshRecommendations);
+      queryClient.setQueryData(recommendationsKey, freshRecommendations);
+      queryClient.setQueryData(contributorsKey, freshRecommendations);
 
       submitAnalyticsEvent({
         category: 'recommendations',
         subcategory: 'profile_force_refresh',
-        payload: { source: $params.profileSource, model: $params.modelName, surface: getSurface() },
+        payload: { source: refreshParams.profileSource, model: refreshParams.modelName, surface: getSurface() },
       });
     } catch (err) {
       profileRefreshError = typeof err === 'string' ? err : err instanceof Error ? err.message : 'Refresh failed';
@@ -255,6 +263,11 @@
       return state;
     });
   };
+
+  const includeGenreID = (genreID: number) => {
+    submitAnalyticsEvent({ category: 'recommendations', subcategory: 'exclude_genre_remove', payload: { genre_id: genreID, surface: getSurface() } });
+    $params.excludedGenreIDs = $params.excludedGenreIDs.filter((id) => id !== genreID);
+  };
 </script>
 
 <div class="root">
@@ -265,7 +278,6 @@
       {params}
       animeMetadataDatabase={$animeMetadataDatabase}
       isLoading={$recosRes.isLoading || $recosRes.isRefetching}
-      {genresDB}
       hideLogitWeight={userRatingStats?.isNonRater ?? false}
       onForceProfileRefresh={forceProfileRefresh}
       {isProfileRefreshing}
@@ -278,6 +290,9 @@
       {userRatingStats}
       excludeRanking={excludedRankingAnimeIDs}
       excludeGenre={excludeGenreID}
+      includeGenre={includeGenreID}
+      excludedGenreIDs={$params.excludedGenreIDs}
+      genreNames={$genresDB}
       contributorsLoading={$recosRes.isLoading ||
         $recosRes.isRefetching ||
         $recoContributorsRes.isLoading ||
