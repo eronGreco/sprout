@@ -60,15 +60,18 @@
     });
 </script>
 
-<div class="root">
-  <div class="panel-header">
-    <div class="section-title">
+<details class="root">
+  <summary class="panel-summary">
+    <h2 class="section-title">
       <span class="heading-icon"><SettingsAdjust size={20} aria-hidden="true" /></span>
-      <div>
-        <h2>Recommendation settings</h2>
-        <p>Choose what to include</p>
-      </div>
-    </div>
+      <span>
+        <span>Recommendation settings</span>
+        <span class="section-description">Choose what to include</span>
+      </span>
+    </h2>
+    <ChevronDown size={20} aria-hidden="true" />
+  </summary>
+  <div class="panel-body">
     {#if $params.profileSource === ProfileSource.MyAnimeList && onForceProfileRefresh}
       <div class="profile-refresh">
         <button
@@ -87,275 +90,289 @@
         />
       </div>
     {/if}
-  </div>
-  {#if profileRefreshError}<p class="refresh-error" role="alert">{profileRefreshError}</p>{/if}
-  <div class="toggles">
-    <div class:enabled={$params.includeExtraSeasons}>
-      <div class="toggle-heading">
-        <Layers size={20} aria-hidden="true" /><span>Extra Seasons</span><HelpTip
-          label="Extra Seasons"
-          text="Off hides TV/unknown recommendations connected through sequel, prequel, parent-story, or side-story relationships to anime you already watched. Other formats have their own switches. On allows these extra seasons/stories."
-        />
-      </div>
-      <Toggle
-        labelText="Extra Seasons"
-        size="sm"
-        hideLabel
-        bind:toggled={$params.includeExtraSeasons}
-        on:toggle={(evt) => submitFilterToggle('extra_seasons', evt.detail.toggled)}
-      />
-    </div>
-    <div class:enabled={$params.includeMovies}>
-      <div class="toggle-heading">
-        <Video size={20} aria-hidden="true" /><span>Movies</span><HelpTip
-          label="Movies"
-          text="Off excludes MAL entries whose format is Movie. On allows movies."
-        />
-      </div>
-      <Toggle
-        labelText="Movies"
-        size="sm"
-        hideLabel
-        bind:toggled={$params.includeMovies}
-        on:toggle={(evt) => submitFilterToggle('movies', evt.detail.toggled)}
-      />
-    </div>
-    <div class:enabled={$params.includeONAsOVAsSpecials}>
-      <div class="toggle-heading">
-        <Playlist size={20} aria-hidden="true" /><span>ONAs / OVAs / Specials</span><HelpTip
-          label="ONAs / OVAs / Specials"
-          text="Off excludes ONA, OVA, Special, and TV Special entries. On allows these formats."
-        />
-      </div>
-      <Toggle
-        labelText="ONAs / OVAs / Specials"
-        size="sm"
-        hideLabel
-        bind:toggled={$params.includeONAsOVAsSpecials}
-        on:toggle={(evt) => submitFilterToggle('onas_ovas_specials', evt.detail.toggled)}
-      />
-    </div>
-    <div class:enabled={$params.includeMusic}>
-      <div class="toggle-heading">
-        <Music size={20} aria-hidden="true" /><span>Music</span><HelpTip
-          label="Music"
-          text="Off excludes Music, commercials (CM), and promotional videos (PV). On allows them."
-        />
-      </div>
-      <Toggle
-        labelText="Music"
-        size="sm"
-        hideLabel
-        bind:toggled={$params.includeMusic}
-        on:toggle={(evt) => submitFilterToggle('music', evt.detail.toggled)}
-      />
-    </div>
-  </div>
-  {#if isLoading}<div class="loading-status"><InlineLoading description="Updating recommendations…" /></div>{/if}
-  {#if !forceHideTopBar}
-    <details
-      class="advanced-options"
-      on:toggle={() =>
-        submitAnalyticsEvent({
-          category: 'recommendations',
-          subcategory: 'advanced_options_toggle',
-          payload: { surface: getSurface() },
-        })}
-    >
-      <summary
-        ><span>Advanced Options</span><span class="model-caption"
-          >{ALL_MODEL_OPTIONS.find((model) => model.id === $params.modelName)?.text}</span
-        ><ChevronDown size={16} aria-hidden="true" /></summary
-      >
-      <div class="top">
-        <div class="top-row">
-          <div>
-            <div class="field-heading">
-              <span>Model</span><HelpTip
-                label="Model"
-                text="Chooses the trained recommendation version. Aug. 2026 is the default, v2 is experimental, Dec. 2025 is the previous model, and Legacy uses the older 2023 serving path. Changing model can change scores and ranking order."
-              />
-            </div>
-            <Dropdown
-              style="width: 100%;"
-              titleText="Model"
-              hideLabel
-              selectedId={$params.modelName}
-              on:select={(selected) => {
-                const model = selected.detail.selectedItem.id;
-                if (model !== $params.modelName) {
-                  submitAnalyticsEvent({
-                    category: 'recommendations',
-                    subcategory: 'model_select',
-                    payload: { model, surface: getSurface() },
-                  });
-                  if ($params.nicheBoostFactor === getDefaultNicheBoostFactor($params.modelName)) {
-                    $params.nicheBoostFactor = getDefaultNicheBoostFactor(model);
-                    localNicheBoostFactor = getDefaultNicheBoostFactor(model);
-                  }
-                }
-                $params.modelName = model;
-              }}
-              items={ALL_MODEL_OPTIONS}
-            />
-          </div>
-          <div>
-            <div class="field-heading">
-              <span>Filter Plan to Watch</span><HelpTip
-                label="Filter Plan to Watch"
-                text="On removes anime already marked Plan to Watch in your profile. Off keeps them eligible and labels them in the results."
-              />
-            </div>
-            <Toggle
-              labelText="Filter Plan to Watch"
-              hideLabel
-              size="sm"
-              bind:toggled={$params.filterPlanToWatch}
-              on:toggle={(evt) => submitFilterToggle('plan_to_watch', evt.detail.toggled)}
-            />
-          </div>
+    {#if profileRefreshError}<p class="refresh-error" role="alert">{profileRefreshError}</p>{/if}
+    <div class="toggles">
+      <div class:enabled={$params.includeExtraSeasons}>
+        <div class="toggle-heading">
+          <Layers size={20} aria-hidden="true" /><span>Extra Seasons</span><HelpTip
+            label="Extra Seasons"
+            text="Off hides TV/unknown recommendations connected through sequel, prequel, parent-story, or side-story relationships to anime you already watched. Other formats have their own switches. On allows these extra seasons/stories."
+          />
         </div>
-        <div class="bottom-row">
-          {#if $params.modelName === ModelName.Legacy_2023}
+        <Toggle
+          labelText="Extra Seasons"
+          size="sm"
+          hideLabel
+          bind:toggled={$params.includeExtraSeasons}
+          on:toggle={(evt) => submitFilterToggle('extra_seasons', evt.detail.toggled)}
+        />
+      </div>
+      <div class:enabled={$params.includeMovies}>
+        <div class="toggle-heading">
+          <Video size={20} aria-hidden="true" /><span>Movies</span><HelpTip
+            label="Movies"
+            text="Off excludes MAL entries whose format is Movie. On allows movies."
+          />
+        </div>
+        <Toggle
+          labelText="Movies"
+          size="sm"
+          hideLabel
+          bind:toggled={$params.includeMovies}
+          on:toggle={(evt) => submitFilterToggle('movies', evt.detail.toggled)}
+        />
+      </div>
+      <div class:enabled={$params.includeONAsOVAsSpecials}>
+        <div class="toggle-heading">
+          <Playlist size={20} aria-hidden="true" /><span>ONAs / OVAs / Specials</span><HelpTip
+            label="ONAs / OVAs / Specials"
+            text="Off excludes ONA, OVA, Special, and TV Special entries. On allows these formats."
+          />
+        </div>
+        <Toggle
+          labelText="ONAs / OVAs / Specials"
+          size="sm"
+          hideLabel
+          bind:toggled={$params.includeONAsOVAsSpecials}
+          on:toggle={(evt) => submitFilterToggle('onas_ovas_specials', evt.detail.toggled)}
+        />
+      </div>
+      <div class:enabled={$params.includeMusic}>
+        <div class="toggle-heading">
+          <Music size={20} aria-hidden="true" /><span>Music</span><HelpTip
+            label="Music"
+            text="Off excludes Music, commercials (CM), and promotional videos (PV). On allows them."
+          />
+        </div>
+        <Toggle
+          labelText="Music"
+          size="sm"
+          hideLabel
+          bind:toggled={$params.includeMusic}
+          on:toggle={(evt) => submitFilterToggle('music', evt.detail.toggled)}
+        />
+      </div>
+    </div>
+    {#if isLoading}<div class="loading-status"><InlineLoading description="Updating recommendations…" /></div>{/if}
+    {#if !forceHideTopBar}
+      <details
+        class="advanced-options"
+        on:toggle={() =>
+          submitAnalyticsEvent({
+            category: 'recommendations',
+            subcategory: 'advanced_options_toggle',
+            payload: { surface: getSurface() },
+          })}
+      >
+        <summary
+          ><span>Advanced Options</span><span class="model-caption"
+            >{ALL_MODEL_OPTIONS.find((model) => model.id === $params.modelName)?.text}</span
+          ><ChevronDown size={16} aria-hidden="true" /></summary
+        >
+        <div class="top">
+          <div class="top-row">
             <div>
               <div class="field-heading">
-                <span>Popularity attenuation</span><HelpTip
-                  label="Popularity attenuation"
-                  text="Legacy model only. Higher values increasingly favor less-popular anime; None preserves the legacy ranking without this adjustment."
+                <span>Model</span><HelpTip
+                  label="Model"
+                  text="Chooses the trained recommendation version. Aug. 2026 is the default, v2 is experimental, Dec. 2025 is the previous model, and Legacy uses the older 2023 serving path. Changing model can change scores and ranking order."
                 />
               </div>
               <Dropdown
                 style="width: 100%;"
-                titleText="Popularity Attenuation Factor"
+                titleText="Model"
                 hideLabel
-                selectedId={$params.popularityAttenuationFactor}
+                selectedId={$params.modelName}
                 on:select={(selected) => {
-                  const value = selected.detail.selectedItem.id;
-                  if (value !== $params.popularityAttenuationFactor) {
+                  const model = selected.detail.selectedItem.id;
+                  if (model !== $params.modelName) {
                     submitAnalyticsEvent({
                       category: 'recommendations',
-                      subcategory: 'attenuation_change',
-                      payload: { value, surface: getSurface() },
+                      subcategory: 'model_select',
+                      payload: { model, surface: getSurface() },
                     });
+                    if ($params.nicheBoostFactor === getDefaultNicheBoostFactor($params.modelName)) {
+                      $params.nicheBoostFactor = getDefaultNicheBoostFactor(model);
+                      localNicheBoostFactor = getDefaultNicheBoostFactor(model);
+                    }
                   }
-                  $params.popularityAttenuationFactor = value;
+                  $params.modelName = model;
                 }}
-                items={ALL_POPULARITY_ATTENUATION_FACTOR_OPTIONS}
+                items={ALL_MODEL_OPTIONS}
               />
             </div>
-          {:else}
-            {#if !hideLogitWeight}
+            <div>
+              <div class="field-heading">
+                <span>Filter Plan to Watch</span><HelpTip
+                  label="Filter Plan to Watch"
+                  text="On removes anime already marked Plan to Watch in your profile. Off keeps them eligible and labels them in the results."
+                />
+              </div>
+              <Toggle
+                labelText="Filter Plan to Watch"
+                hideLabel
+                size="sm"
+                bind:toggled={$params.filterPlanToWatch}
+                on:toggle={(evt) => submitFilterToggle('plan_to_watch', evt.detail.toggled)}
+              />
+            </div>
+          </div>
+          <div class="bottom-row">
+            {#if $params.modelName === ModelName.Legacy_2023}
               <div>
                 <div class="field-heading">
-                  <span>Presence / Rating Weight</span><HelpTip
-                    label="Presence / Rating Weight"
-                    text="0 prioritizes your predicted 1–10 rating; 1 prioritizes how strongly the model expects the anime to belong in your profile. Intermediate values blend both signals."
+                  <span>Popularity attenuation</span><HelpTip
+                    label="Popularity attenuation"
+                    text="Legacy model only. Higher values increasingly favor less-popular anime; None preserves the legacy ranking without this adjustment."
+                  />
+                </div>
+                <Dropdown
+                  style="width: 100%;"
+                  titleText="Popularity Attenuation Factor"
+                  hideLabel
+                  selectedId={$params.popularityAttenuationFactor}
+                  on:select={(selected) => {
+                    const value = selected.detail.selectedItem.id;
+                    if (value !== $params.popularityAttenuationFactor) {
+                      submitAnalyticsEvent({
+                        category: 'recommendations',
+                        subcategory: 'attenuation_change',
+                        payload: { value, surface: getSurface() },
+                      });
+                    }
+                    $params.popularityAttenuationFactor = value;
+                  }}
+                  items={ALL_POPULARITY_ATTENUATION_FACTOR_OPTIONS}
+                />
+              </div>
+            {:else}
+              {#if !hideLogitWeight}
+                <div>
+                  <div class="field-heading">
+                    <span>Presence / Rating Weight</span><HelpTip
+                      label="Presence / Rating Weight"
+                      text="0 prioritizes your predicted 1–10 rating; 1 prioritizes how strongly the model expects the anime to belong in your profile. Intermediate values blend both signals."
+                    />
+                  </div>
+                  <Slider
+                    labelText="Presence/Rating Weight"
+                    hideLabel
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    bind:value={localLogitWeight}
+                    on:change={(evt) => {
+                      if ($params.logitWeight !== evt.detail) {
+                        submitAnalyticsEvent({
+                          category: 'recommendations',
+                          subcategory: 'logit_weight_change',
+                          payload: { value: evt.detail, surface: getSurface() },
+                        });
+                      }
+                      $params.logitWeight = evt.detail;
+                    }}
+                  />
+                  <div class="slider-captions"><span>Predicted rating</span><span>Profile match</span></div>
+                </div>
+              {/if}
+              <div>
+                <div class="field-heading">
+                  <span>Niche Boost Factor</span><HelpTip
+                    label="Niche Boost Factor"
+                    text="0 adds no niche boost. Higher values increasingly favor anime the model predicts for you more strongly than their overall popularity would suggest."
                   />
                 </div>
                 <Slider
-                  labelText="Presence/Rating Weight"
+                  labelText="Niche Boost Factor"
                   hideLabel
                   min={0}
                   max={1}
                   step={0.1}
-                  bind:value={localLogitWeight}
+                  bind:value={localNicheBoostFactor}
                   on:change={(evt) => {
-                    if ($params.logitWeight !== evt.detail) {
+                    if ($params.nicheBoostFactor !== evt.detail) {
                       submitAnalyticsEvent({
                         category: 'recommendations',
-                        subcategory: 'logit_weight_change',
+                        subcategory: 'niche_boost_change',
                         payload: { value: evt.detail, surface: getSurface() },
                       });
                     }
-                    $params.logitWeight = evt.detail;
+                    $params.nicheBoostFactor = evt.detail;
                   }}
                 />
-                <div class="slider-captions"><span>Predicted rating</span><span>Profile match</span></div>
+                <div class="slider-captions"><span>No boost</span><span>More discovery</span></div>
               </div>
             {/if}
-            <div>
-              <div class="field-heading">
-                <span>Niche Boost Factor</span><HelpTip
-                  label="Niche Boost Factor"
-                  text="0 adds no niche boost. Higher values increasingly favor anime the model predicts for you more strongly than their overall popularity would suggest."
-                />
-              </div>
-              <Slider
-                labelText="Niche Boost Factor"
-                hideLabel
-                min={0}
-                max={1}
-                step={0.1}
-                bind:value={localNicheBoostFactor}
-                on:change={(evt) => {
-                  if ($params.nicheBoostFactor !== evt.detail) {
-                    submitAnalyticsEvent({
-                      category: 'recommendations',
-                      subcategory: 'niche_boost_change',
-                      payload: { value: evt.detail, surface: getSurface() },
-                    });
-                  }
-                  $params.nicheBoostFactor = evt.detail;
-                }}
-              />
-              <div class="slider-captions"><span>No boost</span><span>More discovery</span></div>
-            </div>
-          {/if}
+          </div>
+        </div>
+      </details>
+    {/if}
+    {#if $params.excludedRankingAnimeIDs.length > 0}
+      <div>
+        <label for="excluded-rankings" class="bx--label">Excluded Rankings</label>
+        <div class="tags-container" id="excluded-rankings">
+          {#each [...new Set($params.excludedRankingAnimeIDs)] as animeID (animeID)}
+            {@const datum = animeMetadataDatabase[animeID]}
+            {@const title = datum?.alternative_titles.en || datum?.title || ''}
+            <Tag
+              filter
+              on:close={() => {
+                submitAnalyticsEvent({
+                  category: 'recommendations',
+                  subcategory: 'exclude_ranking_remove',
+                  payload: { anime_id: animeID, surface: getSurface() },
+                });
+                params.update((state) => {
+                  state.excludedRankingAnimeIDs = state.excludedRankingAnimeIDs.filter(
+                    (oAnimeID) => oAnimeID !== animeID
+                  );
+                  return state;
+                });
+              }}
+            >
+              {title}
+            </Tag>
+          {/each}
         </div>
       </div>
-    </details>
-  {/if}
-  {#if $params.excludedRankingAnimeIDs.length > 0}
-    <div>
-      <label for="excluded-rankings" class="bx--label">Excluded Rankings</label>
-      <div class="tags-container" id="excluded-rankings">
-        {#each [...new Set($params.excludedRankingAnimeIDs)] as animeID (animeID)}
-          {@const datum = animeMetadataDatabase[animeID]}
-          {@const title = datum?.alternative_titles.en || datum?.title || ''}
-          <Tag
-            filter
-            on:close={() => {
-              submitAnalyticsEvent({
-                category: 'recommendations',
-                subcategory: 'exclude_ranking_remove',
-                payload: { anime_id: animeID, surface: getSurface() },
-              });
-              params.update((state) => {
-                state.excludedRankingAnimeIDs = state.excludedRankingAnimeIDs.filter(
-                  (oAnimeID) => oAnimeID !== animeID
-                );
-                return state;
-              });
-            }}
-          >
-            {title}
-          </Tag>
-        {/each}
-      </div>
-    </div>
-  {/if}
-</div>
+    {/if}
+  </div>
+</details>
 
 <style lang="css">
   .root {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
     padding: 20px;
     border: 1px solid #ffffff18;
     border-radius: 12px;
     background: #171c19;
   }
-  .panel-header,
+  .panel-summary,
   .section-title,
   .profile-refresh {
     display: flex;
     align-items: center;
   }
-  .panel-header {
+  .panel-summary {
     justify-content: space-between;
     gap: 16px;
-    flex-wrap: wrap;
+    cursor: pointer;
+    list-style: none;
+  }
+  .panel-summary::-webkit-details-marker {
+    display: none;
+  }
+  .panel-summary > :global(svg) {
+    flex: none;
+    color: #9caca2;
+  }
+  .root[open] > .panel-summary > :global(svg) {
+    transform: rotate(180deg);
+  }
+  .panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
   }
   .section-title {
     gap: 12px;
@@ -374,9 +391,11 @@
     font-weight: 600;
     margin: 0;
   }
-  .section-title p {
+  .section-description {
+    display: block;
     margin: 3px 0 0;
     font-size: 12px;
+    font-weight: 400;
     line-height: 1.4;
     color: #99a69f;
   }
@@ -428,6 +447,7 @@
   }
   .profile-refresh {
     gap: 2px;
+    align-self: flex-end;
   }
   .profile-refresh button {
     display: inline-flex;
@@ -471,7 +491,7 @@
   .advanced-options {
     border-top: 1px solid #ffffff14;
   }
-  summary {
+  .advanced-options > summary {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -481,10 +501,10 @@
     color: #c8d5cd;
     font-size: 13px;
   }
-  summary::-webkit-details-marker {
+  .advanced-options > summary::-webkit-details-marker {
     display: none;
   }
-  summary > span:first-child {
+  .advanced-options > summary > span:first-child {
     flex: 1;
   }
   .model-caption {
@@ -494,7 +514,7 @@
     padding: 4px 8px;
     border-radius: 4px;
   }
-  .advanced-options[open] summary :global(svg) {
+  .advanced-options[open] > summary :global(svg) {
     transform: rotate(180deg);
   }
   .top {
@@ -575,9 +595,8 @@
   @media (max-width: 560px) {
     .root {
       padding: 16px;
-      gap: 14px;
     }
-    .panel-header {
+    .panel-body {
       gap: 12px;
     }
     .top {

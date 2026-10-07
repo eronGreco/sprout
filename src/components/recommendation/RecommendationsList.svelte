@@ -15,6 +15,7 @@
   import GenreIcon from './GenreIcon.svelte';
   import HelpTip from './HelpTip.svelte';
   import Reset from 'carbon-icons-svelte/lib/Reset.svelte';
+  import ChevronDown from 'carbon-icons-svelte/lib/ChevronDown.svelte';
 
   export let recommendations: Recommendation[];
   export let animeMetadataDatabase: { [animeID: number]: AnimeDetails };
@@ -203,106 +204,112 @@
   }
 </script>
 
-<div class="browse-panel">
-  <div class="browse-header">
-    <div class="browse-heading">
-      <Filter size={20} aria-hidden="true" />
-      <h2>Browse recommendations</h2>
+<details class="browse-panel">
+  <summary class="browse-summary">
+    <h2 class="browse-heading"><Filter size={20} aria-hidden="true" />Browse recommendations</h2>
+    <span class="result-count" role="status"
+      >{displayRecommendations.length} / {recommendations.length} results{displayFiltersActive
+        ? ' · filtered'
+        : ''}</span
+    >
+    <ChevronDown size={20} aria-hidden="true" />
+  </summary>
+  <div class="browse-body">
+    <div class="browse-header">
       <HelpTip
         label="List filters"
         text="Genre, Format, and Year narrow the recommendations already generated. Exclude genres requests new recommendations without the checked genres. Clear filters restores all genres and clears the list filters while keeping your chosen sort order."
       />
-    </div>
-    <div class="control-actions">
-      <span role="status">{displayRecommendations.length} / {recommendations.length} results</span>
-      <button type="button" on:click={clearDisplayFilters} disabled={!displayFiltersActive}
-        ><Reset size={16} aria-hidden="true" />Clear filters</button
-      >
-    </div>
-  </div>
-  <div class="browse-controls">
-    <div class="control sort-control">
-      <div class="control-heading">
-        <label for="recommendation-sort"><ArrowsVertical size={16} aria-hidden="true" />Sort</label><HelpTip
-          label="Sort order"
-          text="Recommended order (default) keeps Sprout’s original recommendation order. Predicted rating sorts by the personalized 1–10 estimate shown beside each title; it is available only when the model provides rating predictions. You can also sort by year or title."
-        />
-      </div>
-      <select id="recommendation-sort" bind:value={sortMode}>
-        <option value="model">Recommended order (default)</option>
-        <option value="predicted-desc" disabled={!hasPredictedRatings}>Predicted rating: high to low</option>
-        <option value="predicted-asc" disabled={!hasPredictedRatings}>Predicted rating: low to high</option>
-        <option value="year-desc">Year: newest first</option>
-        <option value="year-asc">Year: oldest first</option>
-        <option value="title-asc">Title: A–Z</option>
-      </select>
-    </div>
-
-    <div class="control">
-      <label for="genre-filter"
-        >{#if genreFilter}<GenreIcon name={genreFilter} />{:else}<Catalog
-            size={16}
-            aria-hidden="true"
-          />{/if}Genre</label
-      >
-      <select id="genre-filter" bind:value={genreFilter}>
-        <option value="">All genres</option>
-        {#if genreFilter && !availableGenres.includes(genreFilter)}
-          <option value={genreFilter}>{genreFilter} (not in current results)</option>
-        {/if}
-        {#each availableGenres as genre}
-          <option value={genre}>{genre}</option>
-        {/each}
-      </select>
-    </div>
-
-    <div class="control">
-      <label for="format-filter"><Video size={16} aria-hidden="true" />Format</label>
-      <select id="format-filter" bind:value={mediaTypeFilter}>
-        <option value="">All enabled formats</option>
-        {#if mediaTypeFilter && !availableMediaTypes.some((mediaType) => mediaType === mediaTypeFilter)}
-          <option value={mediaTypeFilter}
-            >{MEDIA_TYPE_NAMES[mediaTypeFilter] ?? mediaTypeFilter} (not in current results)</option
-          >
-        {/if}
-        {#each availableMediaTypes as mediaType}
-          <option value={mediaType}>{MEDIA_TYPE_NAMES[mediaType] ?? mediaType}</option>
-        {/each}
-      </select>
-    </div>
-
-    <div class="control year-control">
-      <label for="year-from"><Calendar size={16} aria-hidden="true" />Year</label>
-      <div>
-        <input id="year-from" type="number" min="1900" max="2200" placeholder="From" bind:value={yearFrom} />
-        <span>–</span>
-        <input type="number" min="1900" max="2200" placeholder="To" aria-label="Year to" bind:value={yearTo} />
-      </div>
-    </div>
-
-    {#if excludeGenre && includeGenre}
-      <details class="genre-exclusions">
-        <summary
-          >Exclude genres{#if excludedGenreIDs.length}
-            · {excludedGenreIDs.length} active{/if}</summary
+      <div class="control-actions">
+        <button type="button" on:click={clearDisplayFilters} disabled={!displayFiltersActive}
+          ><Reset size={16} aria-hidden="true" />Clear filters</button
         >
-        <p>Checked genres are excluded from recommendations. Uncheck to restore them.</p>
-        <div class="genre-options">
-          {#each exclusionGenres as [id, name] (id)}
-            <label class:excluded={excludedGenreIDs.includes(id)}>
-              <input
-                type="checkbox"
-                checked={excludedGenreIDs.includes(id)}
-                on:change={(evt) => (evt.currentTarget.checked ? excludeGenre?.(id, name) : includeGenre?.(id))}
-              />
-              <GenreIcon {name} /><span>{name}</span>
-            </label>
-          {/each}
+      </div>
+    </div>
+    <div class="browse-controls">
+      <div class="control sort-control">
+        <div class="control-heading">
+          <label for="recommendation-sort"><ArrowsVertical size={16} aria-hidden="true" />Sort</label><HelpTip
+            label="Sort order"
+            text="Recommended order (default) keeps Sprout’s original recommendation order. Predicted rating sorts by the personalized 1–10 estimate shown beside each title; it is available only when the model provides rating predictions. You can also sort by year or title."
+          />
         </div>
-      </details>
-    {/if}
+        <select id="recommendation-sort" bind:value={sortMode}>
+          <option value="model">Recommended order (default)</option>
+          <option value="predicted-desc" disabled={!hasPredictedRatings}>Predicted rating: high to low</option>
+          <option value="predicted-asc" disabled={!hasPredictedRatings}>Predicted rating: low to high</option>
+          <option value="year-desc">Year: newest first</option>
+          <option value="year-asc">Year: oldest first</option>
+          <option value="title-asc">Title: A–Z</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <label for="genre-filter"
+          >{#if genreFilter}<GenreIcon name={genreFilter} />{:else}<Catalog
+              size={16}
+              aria-hidden="true"
+            />{/if}Genre</label
+        >
+        <select id="genre-filter" bind:value={genreFilter}>
+          <option value="">All genres</option>
+          {#if genreFilter && !availableGenres.includes(genreFilter)}
+            <option value={genreFilter}>{genreFilter} (not in current results)</option>
+          {/if}
+          {#each availableGenres as genre}
+            <option value={genre}>{genre}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="control">
+        <label for="format-filter"><Video size={16} aria-hidden="true" />Format</label>
+        <select id="format-filter" bind:value={mediaTypeFilter}>
+          <option value="">All enabled formats</option>
+          {#if mediaTypeFilter && !availableMediaTypes.some((mediaType) => mediaType === mediaTypeFilter)}
+            <option value={mediaTypeFilter}
+              >{MEDIA_TYPE_NAMES[mediaTypeFilter] ?? mediaTypeFilter} (not in current results)</option
+            >
+          {/if}
+          {#each availableMediaTypes as mediaType}
+            <option value={mediaType}>{MEDIA_TYPE_NAMES[mediaType] ?? mediaType}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="control year-control">
+        <label for="year-from"><Calendar size={16} aria-hidden="true" />Year</label>
+        <div>
+          <input id="year-from" type="number" min="1900" max="2200" placeholder="From" bind:value={yearFrom} />
+          <span>–</span>
+          <input type="number" min="1900" max="2200" placeholder="To" aria-label="Year to" bind:value={yearTo} />
+        </div>
+      </div>
+
+      {#if excludeGenre && includeGenre}
+        <details class="genre-exclusions">
+          <summary
+            >Exclude genres{#if excludedGenreIDs.length}
+              · {excludedGenreIDs.length} active{/if}</summary
+          >
+          <p>Checked genres are excluded from recommendations. Uncheck to restore them.</p>
+          <div class="genre-options">
+            {#each exclusionGenres as [id, name] (id)}
+              <label class:excluded={excludedGenreIDs.includes(id)}>
+                <input
+                  type="checkbox"
+                  checked={excludedGenreIDs.includes(id)}
+                  on:change={(evt) => (evt.currentTarget.checked ? excludeGenre?.(id, name) : includeGenre?.(id))}
+                />
+                <GenreIcon {name} /><span>{name}</span>
+              </label>
+            {/each}
+          </div>
+        </details>
+      {/if}
+    </div>
   </div>
-</div>
+</details>
 
 <div class="recommendations">
   {#each displayRecommendations as { id, topContributors, planToWatch, shownPredictedRating, ratingTier, modelRank } (id)}
@@ -353,16 +360,40 @@
   .browse-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 12px;
     flex-wrap: wrap;
     margin-bottom: 14px;
+  }
+  .browse-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+  }
+  .browse-summary::-webkit-details-marker {
+    display: none;
+  }
+  .browse-summary > :global(svg) {
+    flex: none;
+    color: #9caca2;
+  }
+  .browse-panel[open] > .browse-summary > :global(svg) {
+    transform: rotate(180deg);
+  }
+  .browse-body {
+    margin-top: 14px;
   }
   .browse-heading {
     display: flex;
     align-items: center;
     gap: 8px;
     min-width: 0;
+    color: #edf3ef;
+  }
+  .browse-heading :global(svg) {
+    flex: none;
     color: #88da95;
   }
   h2 {
@@ -433,11 +464,12 @@
     align-items: center;
     gap: 12px;
   }
-  .control-actions span {
+  .result-count {
     font-size: 11px;
     font-variant-numeric: tabular-nums;
     color: #a5b6ab;
     white-space: nowrap;
+    margin-left: auto;
   }
   .control-actions button {
     display: inline-flex;
@@ -534,8 +566,19 @@
       gap: 8px;
     }
     .control-actions {
-      justify-content: space-between;
+      justify-content: flex-end;
+    }
+    .browse-summary {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .browse-heading {
+      flex: 1;
+    }
+    .result-count {
+      order: 1;
       width: 100%;
+      margin-left: 28px;
     }
     .sort-control,
     .year-control {
